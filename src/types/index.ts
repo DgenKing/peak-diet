@@ -64,6 +64,7 @@ export type Preset =
   | 'student'
   | 'parent'
   | 'vegan'
+  | 'vegetarian'
   | 'keto'
   | 'gluten_free'
   | 'paleo'
