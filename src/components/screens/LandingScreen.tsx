@@ -1,4 +1,5 @@
 import { Button } from '../ui/Button';
+import logo from '../../assets/logo.png';
 
 interface LandingScreenProps {
   onStart: () => void;
@@ -9,8 +10,8 @@ export function LandingScreen({ onStart }: LandingScreenProps) {
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
       <div className="max-w-md mx-auto">
         {/* Logo/Icon */}
-        <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-          <span className="text-4xl">🥗</span>
+        <div className="flex justify-center mb-6">
+          <img src={logo} alt="PeakDiet Logo" className="w-32 h-auto" />
         </div>
 
         {/* Title */}
