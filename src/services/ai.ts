@@ -1,8 +1,9 @@
 import OpenAI from 'openai';
 import { DietPlanSchema } from '../types/diet';
 import type { DietPlan } from '../types/diet';
-import type { SimpleFormData } from '../types';
+import type { SimpleFormData, AdvancedFormData } from '../types';
 import { generateSimplePrompt } from '../utils/simplePromptGenerator';
+import { generateAdvancedPrompt } from '../utils/advancedPromptGenerator';
 
 const API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
 
@@ -132,6 +133,36 @@ export async function updateDietPlan(currentPlan: DietPlan, instruction: string)
     return DietPlanSchema.parse(json);
   } catch (error) {
     console.error("AI Update Error:", error);
+    throw error;
+  }
+}
+
+export async function generateAdvancedDietPlan(data: AdvancedFormData): Promise<DietPlan> {
+  if (!API_KEY) {
+    console.warn("No API Key found, returning mock data.");
+    await new Promise(r => setTimeout(r, 2000));
+    return MOCK_PLAN;
+  }
+
+  const userPrompt = generateAdvancedPrompt(data, 'detailed');
+
+  try {
+    const completion = await client.chat.completions.create({
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userPrompt + "\n\nReturn strict JSON following the schema." }
+      ],
+      model: "deepseek-chat",
+      response_format: { type: "json_object" },
+    });
+
+    const content = completion.choices[0].message.content;
+    if (!content) throw new Error("No content returned");
+
+    const json = JSON.parse(content);
+    return DietPlanSchema.parse(json);
+  } catch (error) {
+    console.error("AI Generation Error:", error);
     throw error;
   }
 }

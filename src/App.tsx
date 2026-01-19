@@ -21,7 +21,9 @@ import { AdvancedFoodScreen } from './components/screens/advanced/AdvancedFoodSc
 import { AdvancedLifestyleScreen } from './components/screens/advanced/AdvancedLifestyleScreen';
 import { AdvancedProblemsScreen } from './components/screens/advanced/AdvancedProblemsScreen';
 import { AdvancedOptionsScreen } from './components/screens/advanced/AdvancedOptionsScreen';
-import { AdvancedPromptScreen } from './components/screens/advanced/AdvancedPromptScreen';
+
+// AI Services
+import { generateDietPlan, generateAdvancedDietPlan } from './services/ai';
 
 const initialSimpleData: SimpleFormData = {
   goal: null,
@@ -125,15 +127,6 @@ function App() {
     setAdvancedData((prev) => ({ ...prev, ...data }));
   };
 
-  const handleStartOver = () => {
-    setScreen('landing');
-    setMode(null);
-    setSimpleStep('goal');
-    setAdvancedStep('goal');
-    setSimpleData(initialSimpleData);
-    setAdvancedData(initialAdvancedData);
-  };
-
   // Theme toggle - fixed position
   const themeToggleElement = (
     <div className="fixed top-4 right-4 z-50">
@@ -219,7 +212,7 @@ function App() {
         case 'dashboard':
           return (
             <DietDashboardScreen
-              initialData={simpleData}
+              generatePlan={() => generateDietPlan(simpleData)}
               onBack={goBack}
             />
           );
@@ -237,7 +230,7 @@ function App() {
   // Advanced Mode
   if (screen === 'advanced' && mode === 'advanced') {
     const advancedSteps: AdvancedStep[] = [
-      'goal', 'stats', 'activity', 'food', 'lifestyle', 'problems', 'options', 'prompt'
+      'goal', 'stats', 'activity', 'food', 'lifestyle', 'problems', 'options', 'dashboard'
     ];
 
     const goNext = () => {
@@ -321,12 +314,11 @@ function App() {
               onBack={goBack}
             />
           );
-        case 'prompt':
+        case 'dashboard':
           return (
-            <AdvancedPromptScreen
-              data={advancedData}
+            <DietDashboardScreen
+              generatePlan={() => generateAdvancedDietPlan(advancedData)}
               onBack={goBack}
-              onStartOver={handleStartOver}
             />
           );
       }

@@ -3,7 +3,7 @@ export type AppMode = 'simple' | 'advanced';
 
 // Screen/Step tracking
 export type SimpleStep = 'goal' | 'activity' | 'food' | 'dashboard';
-export type AdvancedStep = 'goal' | 'stats' | 'activity' | 'food' | 'lifestyle' | 'problems' | 'options' | 'prompt';
+export type AdvancedStep = 'goal' | 'stats' | 'activity' | 'food' | 'lifestyle' | 'problems' | 'options' | 'dashboard';
 
 // Goals
 export type SimpleGoal = 'lose_fat' | 'build_muscle' | 'both' | 'get_fitter';

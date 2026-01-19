@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
-import type { SimpleFormData } from '../../types';
 import type { DietPlan } from '../../types/diet';
-import { generateDietPlan, updateDietPlan } from '../../services/ai';
+import { updateDietPlan } from '../../services/ai';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
 interface DietDashboardScreenProps {
-  initialData: SimpleFormData;
+  generatePlan: () => Promise<DietPlan>;
   onBack: () => void;
 }
 
-export function DietDashboardScreen({ initialData, onBack }: DietDashboardScreenProps) {
+export function DietDashboardScreen({ generatePlan, onBack }: DietDashboardScreenProps) {
   const [plan, setPlan] = useState<DietPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -22,7 +21,7 @@ export function DietDashboardScreen({ initialData, onBack }: DietDashboardScreen
     let mounted = true;
     const load = async () => {
       try {
-        const generated = await generateDietPlan(initialData);
+        const generated = await generatePlan();
         if (mounted) {
           setPlan(generated);
           setLoading(false);
@@ -37,7 +36,7 @@ export function DietDashboardScreen({ initialData, onBack }: DietDashboardScreen
     };
     load();
     return () => { mounted = false; };
-  }, [initialData]);
+  }, [generatePlan]);
 
   const handleUpdate = async () => {
     if (!chatInput.trim() || !plan) return;
@@ -135,6 +134,18 @@ export function DietDashboardScreen({ initialData, onBack }: DietDashboardScreen
               </div>
             ))}
           </div>
+
+          {/* Tips */}
+          {plan.tips && plan.tips.length > 0 && (
+            <div className="bg-primary-light dark:bg-primary/10 border border-primary/20 dark:border-primary/30 rounded-xl p-4">
+              <h3 className="font-semibold text-primary-dark dark:text-primary mb-2">Pro Tips</h3>
+              <ul className="text-sm text-primary-dark dark:text-primary/80 space-y-1">
+                {plan.tips.map((tip, idx) => (
+                  <li key={idx}>• {tip}</li>
+                ))}
+              </ul>
+            </div>
+          )}
        </div>
 
        {/* Chat Interface */}
