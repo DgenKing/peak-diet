@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { AppMode, SimpleFormData, AdvancedFormData, SimpleStep, AdvancedStep } from './types';
 import { useTheme } from './hooks/useTheme';
 import { ThemeToggle } from './components/ui/ThemeToggle';
@@ -111,6 +111,11 @@ function App() {
   const [advancedStep, setAdvancedStep] = useState<AdvancedStep>('goal');
   const [simpleData, setSimpleData] = useState<SimpleFormData>(initialSimpleData);
   const [advancedData, setAdvancedData] = useState<AdvancedFormData>(initialAdvancedData);
+
+  // Scroll to top on step change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [screen, simpleStep, advancedStep]);
 
   const updateSimpleData = (data: Partial<SimpleFormData>) => {
     setSimpleData((prev) => ({ ...prev, ...data }));
