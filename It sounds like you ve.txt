@@ -1,0 +1,33 @@
+It sounds like you’ve found a really effective, systematic way to use AI as a personal nutrition coach! Writing this out for Natalie is a great idea—it makes the process feel much less intimidating.
+
+Here is a clear, step-by-step explanation of your method that you can share with her.
+
+How I Built My Custom Bodybuilding Diet Using AI
+To get a diet that actually works for my body and my schedule, I used ChatGPT as a specialized nutritionist. Instead of just asking for a "random meal plan," I gave it a specific set of data points so it could tailor everything to my exact needs.
+
+Step 1: Providing the "Body Stats"
+First, I gave the AI my physical baseline. This allows the AI to calculate my Basal Metabolic Rate (BMR)—the calories my body burns just by existing.
+
+Age, Height, and Weight: This determines the starting calorie count.
+
+Daily Activity Level: I explained what I do for work (whether I’m sitting at a desk or on my feet all day).
+
+Training Frequency: I told it I train 5 days a week for 45 minutes per session.
+
+Step 2: Defining the Goal
+I was very specific about the outcome. I told the AI I wanted a "Body Recomposition" plan—which means I want to build muscle and burn fat at the same time. This tells the AI to keep protein high while being precise with carbohydrates and fats.
+
+Step 3: Setting the Food "Boundaries"
+A diet only works if you actually enjoy the food. I gave the AI a list of my preferences:
+
+Preferred Foods: I listed the fruits and proteins I actually like eating.
+
+Flexibility: I asked the AI to design the plan around my list but gave it permission to "add a few extra bits" (like healthy fats or specific grains) to ensure I was hitting all my micronutrient and fiber goals.
+
+Step 4: The Result
+The AI then generated a full daily meal structure that told me exactly what to eat, when to eat it, and why those foods were chosen for my 5-day training split.
+
+Why this works for bodybuilding:
+"By giving the AI your specific workout duration (45 mins) and frequency (5 days), it ensures you aren't under-eating, which would cause muscle loss, or over-eating, which would add body fat. It’s a data-driven approach to eating."
+
+Would you like me to help you draft the specific prompt Natalie should use to get her own plan started?
