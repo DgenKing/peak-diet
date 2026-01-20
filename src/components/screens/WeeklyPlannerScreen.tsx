@@ -33,6 +33,7 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
   const [shoppingListLoading, setShoppingListLoading] = useState(false);
   const [shoppingListContent, setShoppingListContent] = useState<string>(cachedShoppingList || '');
   const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * loadingTips.length));
+  const [showCopied, setShowCopied] = useState(false);
 
   // Sync with cached list when it changes
   useEffect(() => {
@@ -180,11 +181,14 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
                    </Button>
                  </div>
                )}
-               <div className="flex gap-3">
+               <div className="flex gap-3 items-center">
                  <Button variant="outline" onClick={() => {
                     navigator.clipboard.writeText(shoppingListContent);
-                    alert('Copied to clipboard!');
-                 }} disabled={shoppingListLoading}>Copy</Button>
+                    setShowCopied(true);
+                    setTimeout(() => setShowCopied(false), 2000);
+                 }} disabled={shoppingListLoading}>
+                   {showCopied ? '✓ Copied!' : 'Copy'}
+                 </Button>
                  <Button onClick={() => setShoppingListModal(false)}>Close</Button>
                </div>
              </div>
