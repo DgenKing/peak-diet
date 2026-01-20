@@ -232,7 +232,7 @@ export function AdvancedOptionsScreen({ data, onChange, onNext, onBack }: Advanc
 
       <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
         <Button fullWidth size="lg" onClick={onNext}>
-          Generate My Prompt
+          Generate My Diet
         </Button>
       </div>
     </div>

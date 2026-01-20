@@ -159,7 +159,7 @@ export function SimpleFoodScreen({ data, onChange, onNext, onBack }: SimpleFoodS
       {/* Footer */}
       <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
         <Button fullWidth size="lg" onClick={onNext} disabled={!canProceed}>
-          Generate My Prompt
+          Generate My Diet
         </Button>
       </div>
     </div>
