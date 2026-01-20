@@ -15,6 +15,11 @@ const client = new OpenAI({
 
 const SYSTEM_PROMPT = `You are an expert nutritionist. You must output STRICT JSON only.
 Your goal is to generate a personalized diet plan based on the user's profile.
+
+CRITICAL RULE: The sum of calories from all meals MUST match the "dailyTargets.calories" (within 5% margin). Do not output a target of 2500kcal if the meals only add up to 2000kcal. Adjust portions to match the target.
+
+CRITICAL RULE: Do NOT include a "weekly grocery list" in the tips. This is a single-day plan. Only list ingredients needed for THIS day if asked, otherwise focus on preparation tips.
+
 Follow the following JSON schema strictly:
 {
   "summary": "string",
@@ -170,4 +175,45 @@ export async function generateAdvancedDietPlan(data: AdvancedFormData): Promise<
 // Placeholder for future chat implementation
 export async function processChatRequest(_userMsg: string, _schedule: WeeklySchedule): Promise<{ response: string; action: 'reply' | 'update'; targetDay?: string; updatedPlan?: DietPlan }> {
   return { response: "Chat feature coming soon!", action: 'reply' };
+}
+
+export async function generateShoppingList(ingredients: string[]): Promise<string> {
+  if (!API_KEY) {
+    await new Promise(r => setTimeout(r, 1500));
+    return "Mock Shopping List:\n\nProduce:\n- Apples: 5\n- Bananas: 2\n\nProteins:\n- Chicken Breast: 500g\n- Eggs: 12";
+  }
+
+  const prompt = `
+    You are a highly precise kitchen assistant.
+    Here is a raw list of ingredients for a weekly diet plan:
+    
+    ${ingredients.join('\n')}
+
+    Your task is to create a consolidated shopping list with extreme accuracy.
+    
+    RULES:
+    1. MERGE CAREFULLY: Sum up the exact quantities for identical items (e.g., "150g Chicken" + "200g Chicken" = "350g Chicken").
+    2. DO NOT MISS ANYTHING: Every single ingredient from the raw list must be accounted for.
+    3. UNIT CONVERSION: Convert to standard shopping units where sensible (e.g. 1000g -> 1kg), but keep specific counts (e.g. "2 Apples").
+    4. PANTRY BUFFERS: Round up slightly for oils, spices, and staples to ensure the user has enough.
+    5. CATEGORIZE: Group by Produce, Meat/Protein, Dairy, Pantry, Frozen, etc.
+    6. FORMAT: Output in Markdown with headers (### Category) and bullet points (* **Item:** Quantity).
+
+    Output the final clean list now.
+  `;
+
+  try {
+    const completion = await client.chat.completions.create({
+      messages: [
+        { role: "system", content: "You are a helpful assistant that creates organized shopping lists." },
+        { role: "user", content: prompt }
+      ],
+      model: "deepseek-chat",
+    });
+
+    return completion.choices[0].message.content || "Could not generate list.";
+  } catch (error) {
+    console.error("AI Shopping List Error:", error);
+    throw error;
+  }
 }

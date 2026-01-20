@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { DayOfWeek, WeeklySchedule } from '../../types/diet';
+import { generateShoppingList } from '../../services/ai';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 
@@ -23,10 +24,44 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
     day: null,
   });
 
+  const [shoppingListModal, setShoppingListModal] = useState(false);
+  const [shoppingListLoading, setShoppingListLoading] = useState(false);
+  const [shoppingListContent, setShoppingListContent] = useState<string>('');
+
   const handleDeleteClick = (e: React.MouseEvent, day: DayOfWeek) => {
     e.stopPropagation();
     setModalConfig({ isOpen: true, day });
   };
+
+  const handleGenerateList = async () => {
+    setShoppingListModal(true);
+    setShoppingListLoading(true);
+    setShoppingListContent('');
+
+    const rawItems: string[] = [];
+    days.forEach(day => {
+      const plan = schedule[day];
+      if (plan) {
+        plan.meals.forEach(meal => {
+          meal.items.forEach(item => {
+            rawItems.push(`${item.amount} ${item.name}`);
+          });
+        });
+      }
+    });
+
+    try {
+      const list = await generateShoppingList(rawItems);
+      setShoppingListContent(list);
+    } catch (err) {
+      console.error(err);
+      setShoppingListContent("Error generating list. Please try again.");
+    } finally {
+      setShoppingListLoading(false);
+    }
+  };
+
+  const isFullWeek = days.every(day => schedule[day] !== null);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100 pb-24">
@@ -41,13 +76,87 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
         confirmText="Clear Plan"
       />
 
+      {/* Shopping List Modal */}
+      {shoppingListModal && (
+         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShoppingListModal(false)} />
+           <div className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+             <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Weekly Shopping List</h3>
+               <p className="text-sm text-gray-500">AI-Optimized List</p>
+             </div>
+             
+             <div className="flex-1 overflow-auto p-6">
+               {shoppingListLoading ? (
+                 <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                   <div className="animate-spin text-3xl mb-3">🛒</div>
+                   <p className="text-sm animate-pulse">Organizing your ingredients...</p>
+                 </div>
+               ) : (
+                 <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
+                   {shoppingListContent.split('\n').map((line, i) => {
+                     const trimmed = line.trim();
+                     if (trimmed === '') return null;
+
+                     // Headers (### **Category**)
+                     if (trimmed.startsWith('###')) {
+                       const title = trimmed.replace(/[#\*]/g, '').trim();
+                       return <h4 key={i} className="text-base font-bold text-primary mt-6 mb-2 border-b border-primary/10 pb-1">{title}</h4>;
+                     }
+
+                     // List Items (* **Item:** Details)
+                     if (trimmed.startsWith('*') || trimmed.startsWith('-')) {
+                        const content = trimmed.replace(/^[\*\-]\s*/, '');
+                        // Handle bold parts: **Item:**
+                        const parts = content.split('**');
+                        if (parts.length >= 3) {
+                            return (
+                                <div key={i} className="flex items-start gap-2 ml-1 my-1">
+                                    <span className="text-primary/60 mt-1.5 text-[10px]">●</span>
+                                    <span className="leading-relaxed">
+                                        <strong className="text-gray-900 dark:text-gray-100">{parts[1]}</strong>
+                                        {parts[2]}
+                                    </span>
+                                </div>
+                            );
+                        }
+                        return (
+                           <div key={i} className="flex items-start gap-2 ml-1 my-1">
+                               <span className="text-primary/60 mt-1.5 text-[10px]">●</span>
+                               <span className="leading-relaxed italic text-gray-500">{content.replace(/\*/g, '')}</span>
+                           </div>
+                        );
+                     }
+                     
+                     return <p key={i} className="text-gray-500 dark:text-gray-400 italic mb-2">{trimmed.replace(/\*/g, '')}</p>;
+                   })}
+                 </div>
+               )}
+             </div>
+
+             <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex gap-3">
+               <Button variant="outline" onClick={() => {
+                  navigator.clipboard.writeText(shoppingListContent);
+                  alert('Copied to clipboard!');
+               }} disabled={shoppingListLoading}>Copy</Button>
+               <Button onClick={() => setShoppingListModal(false)}>Close</Button>
+             </div>
+           </div>
+         </div>
+      )}
+
       {/* Header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30 flex justify-between items-center">
         <div>
            <h1 className="text-xl font-bold flex items-center gap-2">Your Week</h1>
            <p className="text-xs text-gray-500">7 Day Overview</p>
         </div>
-        <div className="mr-[35px]">
+        <div className="mr-[35px] flex gap-2">
+          {isFullWeek && (
+            <Button variant="secondary" size="sm" onClick={handleGenerateList}>
+              🛒 List
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={onGenerateNew}>
             + New Plan
           </Button>
