@@ -1,19 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { DayOfWeek, WeeklySchedule } from '../../types/diet';
 import { generateShoppingList } from '../../services/ai';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
+import logo from '../../assets/logo.png';
+import { loadingTips } from '../../utils/loadingTips';
 
 interface WeeklyPlannerScreenProps {
   schedule: WeeklySchedule;
   onSelectDay: (day: DayOfWeek) => void;
   onClearDay: (day: DayOfWeek) => void;
   onGenerateNew: () => void;
+  cachedShoppingList: string | null;
+  hasScheduleChanged: boolean;
+  onSaveShoppingList: (list: string) => void;
 }
 
 const days: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGenerateNew }: WeeklyPlannerScreenProps) {
+export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGenerateNew, cachedShoppingList, hasScheduleChanged, onSaveShoppingList }: WeeklyPlannerScreenProps) {
   const hasAnyPlans = Object.values(schedule).some(p => p !== null);
 
   const [modalConfig, setModalConfig] = useState<{
@@ -26,17 +31,45 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
 
   const [shoppingListModal, setShoppingListModal] = useState(false);
   const [shoppingListLoading, setShoppingListLoading] = useState(false);
-  const [shoppingListContent, setShoppingListContent] = useState<string>('');
+  const [shoppingListContent, setShoppingListContent] = useState<string>(cachedShoppingList || '');
+  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * loadingTips.length));
+
+  // Sync with cached list when it changes
+  useEffect(() => {
+    if (cachedShoppingList) {
+      setShoppingListContent(cachedShoppingList);
+    }
+  }, [cachedShoppingList]);
+
+  // Rotate tips every 7 seconds while loading
+  useEffect(() => {
+    if (!shoppingListLoading) return;
+    const interval = setInterval(() => {
+      setTipIndex(prev => (prev + 1) % loadingTips.length);
+    }, 7000);
+    return () => clearInterval(interval);
+  }, [shoppingListLoading]);
 
   const handleDeleteClick = (e: React.MouseEvent, day: DayOfWeek) => {
     e.stopPropagation();
     setModalConfig({ isOpen: true, day });
   };
 
-  const handleGenerateList = async () => {
+  const handleOpenList = () => {
     setShoppingListModal(true);
+    // If we have a cached list and no changes, just show it
+    if (cachedShoppingList && !hasScheduleChanged) {
+      setShoppingListContent(cachedShoppingList);
+      setShoppingListLoading(false);
+    } else if (!cachedShoppingList) {
+      // No cache, generate new list
+      handleGenerateList();
+    }
+    // If hasScheduleChanged, show cached list but user can rebuild
+  };
+
+  const handleGenerateList = async () => {
     setShoppingListLoading(true);
-    setShoppingListContent('');
 
     const rawItems: string[] = [];
     days.forEach(day => {
@@ -53,6 +86,7 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
     try {
       const list = await generateShoppingList(rawItems);
       setShoppingListContent(list);
+      onSaveShoppingList(list);
     } catch (err) {
       console.error(err);
       setShoppingListContent("Error generating list. Please try again.");
@@ -89,8 +123,11 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
              <div className="flex-1 overflow-auto p-6">
                {shoppingListLoading ? (
                  <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                   <div className="animate-spin text-3xl mb-3">🛒</div>
-                   <p className="text-sm animate-pulse">Organizing your ingredients...</p>
+                   <img src={logo} alt="PeakDiet" className="h-20 w-auto mb-3 animate-[pulse-scale_1.5s_ease-in-out_infinite]" />
+                   <p className="text-sm mb-4">Organizing your ingredients...</p>
+                   <p className="text-sm italic text-gray-500 dark:text-gray-400 max-w-xs text-center">
+                     💡 {loadingTips[tipIndex]}
+                   </p>
                  </div>
                ) : (
                  <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
@@ -134,12 +171,22 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
                )}
              </div>
 
-             <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex gap-3">
-               <Button variant="outline" onClick={() => {
-                  navigator.clipboard.writeText(shoppingListContent);
-                  alert('Copied to clipboard!');
-               }} disabled={shoppingListLoading}>Copy</Button>
-               <Button onClick={() => setShoppingListModal(false)}>Close</Button>
+             <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-3">
+               {hasScheduleChanged && cachedShoppingList && !shoppingListLoading && (
+                 <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg">
+                   <span>⚠️ Your meal plans have changed</span>
+                   <Button variant="secondary" size="sm" onClick={handleGenerateList}>
+                     Rebuild List
+                   </Button>
+                 </div>
+               )}
+               <div className="flex gap-3">
+                 <Button variant="outline" onClick={() => {
+                    navigator.clipboard.writeText(shoppingListContent);
+                    alert('Copied to clipboard!');
+                 }} disabled={shoppingListLoading}>Copy</Button>
+                 <Button onClick={() => setShoppingListModal(false)}>Close</Button>
+               </div>
              </div>
            </div>
          </div>
@@ -153,7 +200,7 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
         </div>
         <div className="mr-[35px] flex gap-2">
           {isFullWeek && (
-            <Button variant="secondary" size="sm" onClick={handleGenerateList}>
+            <Button variant="secondary" size="sm" onClick={handleOpenList}>
               🛒 List
             </Button>
           )}

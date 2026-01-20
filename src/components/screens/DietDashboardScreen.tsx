@@ -4,6 +4,7 @@ import { updateDietPlan } from '../../services/ai';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 interface DietDashboardScreenProps {
   generatePlan?: () => Promise<DietPlan>;
@@ -117,11 +118,10 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100">
-        <div className="animate-spin text-4xl mb-4">🥗</div>
-        <h2 className="text-xl font-bold">Generating your perfect diet...</h2>
-        <p className="text-gray-500">Consulting the AI nutritionist</p>
-      </div>
+      <LoadingSpinner
+        title="Generating your perfect diet..."
+        subtitle="Consulting the AI nutritionist"
+      />
     );
   }
 
@@ -138,8 +138,17 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100 pb-24">
+       {/* Updating Overlay */}
+       {updating && (
+         <LoadingSpinner
+           title="Updating your diet..."
+           subtitle="Making changes"
+           overlay
+         />
+       )}
+
        {/* Modal Container */}
-       <Modal 
+       <Modal
           isOpen={modalConfig.isOpen}
           onClose={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
           onConfirm={modalConfig.onConfirm}

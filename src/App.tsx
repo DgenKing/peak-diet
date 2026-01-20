@@ -110,7 +110,7 @@ type Screen = 'landing' | 'mode-select' | 'simple' | 'advanced' | 'planner' | 'd
 
 function App() {
   const { theme, toggleTheme } = useTheme();
-  const { weeklySchedule, setDayPlan, copyToDays, userStats, saveUserStats } = useDietStore();
+  const { weeklySchedule, setDayPlan, copyToDays, userStats, saveUserStats, cachedShoppingList, hasScheduleChanged, saveShoppingList } = useDietStore();
   
   const [screen, setScreen] = useState<Screen>('landing');
   const [mode, setMode] = useState<AppMode | null>(null);
@@ -214,7 +214,7 @@ function App() {
     return (
       <>
         {themeToggleElement}
-        <WeeklyPlannerScreen 
+        <WeeklyPlannerScreen
           schedule={weeklySchedule}
           onSelectDay={handleDaySelect}
           onClearDay={(day) => setDayPlan(day, null)}
@@ -222,6 +222,9 @@ function App() {
             setActiveDay(null);
             setScreen('mode-select');
           }}
+          cachedShoppingList={cachedShoppingList}
+          hasScheduleChanged={hasScheduleChanged}
+          onSaveShoppingList={saveShoppingList}
         />
       </>
     );

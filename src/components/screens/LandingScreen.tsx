@@ -24,22 +24,22 @@ export function LandingScreen({ onStart }: LandingScreenProps) {
 
         {/* Tagline */}
         <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-          Generate the perfect AI prompt for your personalized diet plan
+          AI-powered meal plans you can talk to. Swap ingredients, adjust macros, customize meals - just ask.
         </p>
 
         {/* Value Props */}
         <div className="space-y-3 mb-10 text-left">
           <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-            <span className="text-2xl">⚡</span>
-            <span className="text-gray-700 dark:text-gray-300">Get a tailored prompt in minutes</span>
+            <span className="text-2xl">🤖</span>
+            <span className="text-gray-700 dark:text-gray-300">Chat with your plan - modify meals instantly</span>
+          </div>
+          <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+            <span className="text-2xl">📅</span>
+            <span className="text-gray-700 dark:text-gray-300">Plan your whole week in one place</span>
           </div>
           <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
             <span className="text-2xl">🎯</span>
-            <span className="text-gray-700 dark:text-gray-300">Precise macros for your goals</span>
-          </div>
-          <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-            <span className="text-2xl">🍽️</span>
-            <span className="text-gray-700 dark:text-gray-300">Based on foods you actually like</span>
+            <span className="text-gray-700 dark:text-gray-300">Personalized macros calculated for YOU</span>
           </div>
         </div>
 

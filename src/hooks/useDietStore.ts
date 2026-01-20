@@ -17,6 +17,8 @@ interface DietStore {
   weeklySchedule: WeeklySchedule;
   savedPlans: SavedPlan[];
   userStats: UserStats | null;
+  cachedShoppingList: string | null;
+  shoppingListHash: string | null;
 }
 
 const initialSchedule: WeeklySchedule = {
@@ -43,6 +45,8 @@ export function useDietStore() {
       weeklySchedule: initialSchedule,
       savedPlans: [],
       userStats: null,
+      cachedShoppingList: null,
+      shoppingListHash: null,
     };
   });
 
@@ -52,6 +56,42 @@ export function useDietStore() {
 
   const saveUserStats = (stats: UserStats) => {
     setStore(prev => ({ ...prev, userStats: stats }));
+  };
+
+  // Generate a hash from the schedule to detect changes
+  const generateScheduleHash = (schedule: WeeklySchedule): string => {
+    const items: string[] = [];
+    const days: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    days.forEach(day => {
+      const plan = schedule[day];
+      if (plan) {
+        plan.meals.forEach(meal => {
+          meal.items.forEach(item => {
+            items.push(`${item.amount} ${item.name}`);
+          });
+        });
+      }
+    });
+    return items.sort().join('|');
+  };
+
+  const currentScheduleHash = generateScheduleHash(store.weeklySchedule);
+  const hasScheduleChanged = currentScheduleHash !== store.shoppingListHash;
+
+  const saveShoppingList = (list: string) => {
+    setStore(prev => ({
+      ...prev,
+      cachedShoppingList: list,
+      shoppingListHash: generateScheduleHash(prev.weeklySchedule),
+    }));
+  };
+
+  const clearShoppingListCache = () => {
+    setStore(prev => ({
+      ...prev,
+      cachedShoppingList: null,
+      shoppingListHash: null,
+    }));
   };
 
   const setDayPlan = (day: DayOfWeek, plan: DietPlan | null) => {
@@ -99,10 +139,14 @@ export function useDietStore() {
     weeklySchedule: store.weeklySchedule,
     savedPlans: store.savedPlans,
     userStats: store.userStats,
+    cachedShoppingList: store.cachedShoppingList,
+    hasScheduleChanged,
     setDayPlan,
     saveToLibrary,
     deleteFromLibrary,
     copyToDays,
     saveUserStats,
+    saveShoppingList,
+    clearShoppingListCache,
   };
 }

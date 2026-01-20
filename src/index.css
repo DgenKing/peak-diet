@@ -78,3 +78,15 @@ button {
 button:focus-visible {
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5);
 }
+
+/* Loading logo animation */
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+}
