@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { DietPlanSchema } from '../types/diet';
-import type { DietPlan } from '../types/diet';
+import type { DietPlan, WeeklySchedule } from '../types/diet';
 import type { SimpleFormData, AdvancedFormData } from '../types';
 import { generateSimplePrompt } from '../utils/simplePromptGenerator';
 import { generateAdvancedPrompt } from '../utils/advancedPromptGenerator';
@@ -165,4 +165,9 @@ export async function generateAdvancedDietPlan(data: AdvancedFormData): Promise<
     console.error("AI Generation Error:", error);
     throw error;
   }
+}
+
+// Placeholder for future chat implementation
+export async function processChatRequest(_userMsg: string, _schedule: WeeklySchedule): Promise<{ response: string; action: 'reply' | 'update'; targetDay?: string; updatedPlan?: DietPlan }> {
+  return { response: "Chat feature coming soon!", action: 'reply' };
 }
