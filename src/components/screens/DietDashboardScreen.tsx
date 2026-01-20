@@ -1,23 +1,49 @@
 import { useState, useEffect } from 'react';
-import type { DietPlan } from '../../types/diet';
+import type { DietPlan, DayOfWeek } from '../../types/diet';
 import { updateDietPlan } from '../../services/ai';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { Modal } from '../ui/Modal';
 
 interface DietDashboardScreenProps {
-  generatePlan: () => Promise<DietPlan>;
+  generatePlan?: () => Promise<DietPlan>;
+  initialPlan?: DietPlan;
+  dayName?: DayOfWeek;
   onBack: () => void;
+  onSave?: (plan: DietPlan) => void;
+  onCopyToDays?: (days: DayOfWeek[]) => void;
+  occupiedDays?: DayOfWeek[];
 }
 
-export function DietDashboardScreen({ generatePlan, onBack }: DietDashboardScreenProps) {
-  const [plan, setPlan] = useState<DietPlan | null>(null);
-  const [loading, setLoading] = useState(true);
+const daysList: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack, onSave, onCopyToDays, occupiedDays = [] }: DietDashboardScreenProps) {
+  const [plan, setPlan] = useState<DietPlan | null>(initialPlan || null);
+  const [loading, setLoading] = useState(!initialPlan && !!generatePlan);
   const [updating, setUpdating] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showCopyMenu, setShowCopyMenu] = useState(false);
+
+  // Modal State
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'primary';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Initial generation
   useEffect(() => {
+    if (initialPlan) return;
+    if (!generatePlan) return;
+
     let mounted = true;
     const load = async () => {
       try {
@@ -25,6 +51,7 @@ export function DietDashboardScreen({ generatePlan, onBack }: DietDashboardScree
         if (mounted) {
           setPlan(generated);
           setLoading(false);
+          onSave?.(generated);
         }
       } catch (err) {
         console.error(err);
@@ -36,7 +63,7 @@ export function DietDashboardScreen({ generatePlan, onBack }: DietDashboardScree
     };
     load();
     return () => { mounted = false; };
-  }, [generatePlan]);
+  }, [generatePlan, initialPlan]);
 
   const handleUpdate = async () => {
     if (!chatInput.trim() || !plan) return;
@@ -44,13 +71,48 @@ export function DietDashboardScreen({ generatePlan, onBack }: DietDashboardScree
     try {
       const updated = await updateDietPlan(plan, chatInput);
       setPlan(updated);
+      onSave?.(updated);
       setChatInput('');
     } catch (err) {
         console.error(err);
-      alert('Failed to update plan.');
+      setModalConfig({
+        isOpen: true,
+        title: 'Error',
+        message: 'Failed to update plan. Please try again.',
+        onConfirm: () => {},
+      });
     } finally {
       setUpdating(false);
     }
+  };
+
+  const handleCopy = (day: DayOfWeek) => {
+    const isOccupied = occupiedDays.includes(day);
+    
+    const performCopy = () => {
+      if (onCopyToDays && plan) {
+        onCopyToDays([day]);
+        setModalConfig({
+          isOpen: true,
+          title: 'Success!',
+          message: `Your diet plan has been copied to ${day}.`,
+          onConfirm: () => {},
+        });
+      }
+    };
+
+    if (isOccupied) {
+      setModalConfig({
+        isOpen: true,
+        title: 'Overwrite Plan?',
+        message: `A diet plan already exists for ${day}. Are you sure you want to replace it?`,
+        variant: 'danger',
+        onConfirm: performCopy,
+      });
+    } else {
+      performCopy();
+    }
+    setShowCopyMenu(false);
   };
 
   if (loading) {
@@ -75,17 +137,67 @@ export function DietDashboardScreen({ generatePlan, onBack }: DietDashboardScree
   if (!plan) return null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100 pb-24">
+       {/* Modal Container */}
+       <Modal 
+          isOpen={modalConfig.isOpen}
+          onClose={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
+          onConfirm={modalConfig.onConfirm}
+          title={modalConfig.title}
+          message={modalConfig.message}
+          variant={modalConfig.variant}
+       />
+
        {/* Dashboard Header */}
-       <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-10 flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold">Your Diet Plan</h1>
-            <p className="text-xs text-gray-500">AI Generated • Dynamic</p>
+       <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <button onClick={onBack} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div>
+              <h1 className="text-xl font-bold flex items-center gap-2">
+                {dayName ? dayName : 'New Diet Plan'}
+              </h1>
+              <p className="text-xs text-gray-500">AI Powered</p>
+            </div>
           </div>
-          <button onClick={onBack} className="text-sm text-gray-500 hover:text-red-500 transition-colors">Exit</button>
+          <div className="relative mr-[40px]">
+            <Button variant="secondary" size="sm" onClick={() => setShowCopyMenu(!showCopyMenu)}>
+              Copy to...
+            </Button>
+            
+            {showCopyMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                  Duplicate to Day
+                </div>
+                <div className="max-h-[60vh] overflow-y-auto">
+                  {daysList.filter(d => d !== dayName).map(day => {
+                    const isOccupied = occupiedDays.includes(day);
+                    return (
+                      <button 
+                        key={day}
+                        onClick={() => handleCopy(day)}
+                        className="w-full text-left px-4 py-3 text-sm hover:bg-primary/5 hover:text-primary transition-colors border-b border-gray-50 dark:border-gray-800 last:border-0 flex justify-between items-center"
+                      >
+                        <span className="font-medium">{day}</span>
+                        {isOccupied && (
+                          <span className="text-[10px] bg-primary/10 dark:bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">
+                            Exists
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
        </div>
 
-       <div className="flex-1 overflow-auto p-4 space-y-6 pb-24">
+       <div className="flex-1 overflow-auto p-4 space-y-6">
           {/* Summary */}
           <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
             <h3 className="font-semibold mb-2">Summary</h3>

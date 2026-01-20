@@ -6,6 +6,7 @@ import { ThemeToggle } from './components/ui/ThemeToggle';
 // Screens
 import { LandingScreen } from './components/screens/LandingScreen';
 import { ModeSelectScreen } from './components/screens/ModeSelectScreen';
+import { WeeklyPlannerScreen } from './components/screens/WeeklyPlannerScreen';
 
 // Simple Mode
 import { SimpleGoalScreen } from './components/screens/simple/SimpleGoalScreen';
@@ -24,6 +25,8 @@ import { AdvancedOptionsScreen } from './components/screens/advanced/AdvancedOpt
 
 // AI Services
 import { generateDietPlan, generateAdvancedDietPlan } from './services/ai';
+import { useDietStore } from './hooks/useDietStore';
+import type { DayOfWeek, DietPlan } from './types/diet';
 
 const initialSimpleData: SimpleFormData = {
   goal: null,
@@ -103,16 +106,41 @@ const initialAdvancedData: AdvancedFormData = {
   allowSupplementRecs: true,
 };
 
-type Screen = 'landing' | 'mode-select' | 'simple' | 'advanced';
+type Screen = 'landing' | 'mode-select' | 'simple' | 'advanced' | 'planner' | 'dashboard';
 
 function App() {
   const { theme, toggleTheme } = useTheme();
+  const { weeklySchedule, setDayPlan, copyToDays, userStats, saveUserStats } = useDietStore();
+  
   const [screen, setScreen] = useState<Screen>('landing');
   const [mode, setMode] = useState<AppMode | null>(null);
   const [simpleStep, setSimpleStep] = useState<SimpleStep>('goal');
   const [advancedStep, setAdvancedStep] = useState<AdvancedStep>('goal');
   const [simpleData, setSimpleData] = useState<SimpleFormData>(initialSimpleData);
   const [advancedData, setAdvancedData] = useState<AdvancedFormData>(initialAdvancedData);
+  
+  const [activeDay, setActiveDay] = useState<DayOfWeek | null>(null);
+  const [activePlan, setActivePlan] = useState<DietPlan | null>(null);
+
+  const occupiedDays = (Object.keys(weeklySchedule) as DayOfWeek[]).filter(d => weeklySchedule[d] !== null);
+
+  // Autofill stats if available when starting
+  useEffect(() => {
+    if (userStats) {
+      const commonStats = {
+        age: userStats.age,
+        gender: userStats.gender,
+        height: userStats.height,
+        heightUnit: userStats.heightUnit,
+        heightInches: userStats.heightInches,
+        weight: userStats.weight,
+        weightUnit: userStats.weightUnit,
+      };
+      
+      setSimpleData(prev => ({ ...prev, ...commonStats }));
+      setAdvancedData(prev => ({ ...prev, ...commonStats }));
+    }
+  }, [userStats]);
 
   // Scroll to top on step change
   useEffect(() => {
@@ -127,9 +155,46 @@ function App() {
     setAdvancedData((prev) => ({ ...prev, ...data }));
   };
 
+  const handleDaySelect = (day: DayOfWeek) => {
+    setActiveDay(day);
+    if (weeklySchedule[day]) {
+      setActivePlan(weeklySchedule[day]);
+      setScreen('dashboard');
+    } else {
+      setScreen('mode-select');
+    }
+  };
+
+  const handlePlanGenerated = (plan: DietPlan) => {
+    // Save user stats for next time
+    const currentStats = mode === 'simple' ? simpleData : advancedData;
+    saveUserStats({
+      age: currentStats.age,
+      gender: currentStats.gender,
+      height: currentStats.height,
+      heightUnit: currentStats.heightUnit,
+      heightInches: currentStats.heightInches,
+      weight: currentStats.weight,
+      weightUnit: currentStats.weightUnit,
+    });
+
+    if (activeDay) {
+      setDayPlan(activeDay, plan);
+    }
+    setActivePlan(plan);
+    setScreen('dashboard');
+  };
+
+  const handleUpdatePlan = (updatedPlan: DietPlan) => {
+    if (activeDay) {
+      setDayPlan(activeDay, updatedPlan);
+    }
+    setActivePlan(updatedPlan);
+  };
+
   // Theme toggle - fixed position
   const themeToggleElement = (
-    <div className="fixed top-4 right-4 z-50">
+    <div className="fixed top-[19px] right-[14px] z-50">
       <ThemeToggle theme={theme} onToggle={toggleTheme} />
     </div>
   );
@@ -139,7 +204,25 @@ function App() {
     return (
       <>
         {themeToggleElement}
-        <LandingScreen onStart={() => setScreen('mode-select')} />
+        <LandingScreen onStart={() => setScreen('planner')} />
+      </>
+    );
+  }
+
+  // Planner
+  if (screen === 'planner') {
+    return (
+      <>
+        {themeToggleElement}
+        <WeeklyPlannerScreen 
+          schedule={weeklySchedule}
+          onSelectDay={handleDaySelect}
+          onClearDay={(day) => setDayPlan(day, null)}
+          onGenerateNew={() => {
+            setActiveDay(null);
+            setScreen('mode-select');
+          }}
+        />
       </>
     );
   }
@@ -153,8 +236,10 @@ function App() {
           onSelect={(m) => {
             setMode(m);
             setScreen(m);
+            setSimpleStep('goal');
+            setAdvancedStep('goal');
           }}
-          onBack={() => setScreen('landing')}
+          onBack={() => setScreen('planner')}
         />
       </>
     );
@@ -214,6 +299,9 @@ function App() {
             <DietDashboardScreen
               generatePlan={() => generateDietPlan(simpleData)}
               onBack={goBack}
+              onSave={handlePlanGenerated}
+              onCopyToDays={(days) => activePlan && copyToDays(activePlan, days)}
+              occupiedDays={occupiedDays}
             />
           );
       }
@@ -319,6 +407,9 @@ function App() {
             <DietDashboardScreen
               generatePlan={() => generateAdvancedDietPlan(advancedData)}
               onBack={goBack}
+              onSave={handlePlanGenerated}
+              onCopyToDays={(days) => activePlan && copyToDays(activePlan, days)}
+              occupiedDays={occupiedDays}
             />
           );
       }
@@ -328,6 +419,23 @@ function App() {
       <>
         {themeToggleElement}
         {content}
+      </>
+    );
+  }
+
+  // Final Dashboard View (Existing Plan)
+  if (screen === 'dashboard' && activePlan) {
+    return (
+      <>
+        {themeToggleElement}
+        <DietDashboardScreen
+          initialPlan={activePlan}
+          dayName={activeDay || undefined}
+          onBack={() => setScreen('planner')}
+          onSave={handleUpdatePlan}
+          onCopyToDays={(days) => activePlan && copyToDays(activePlan, days)}
+          occupiedDays={occupiedDays}
+        />
       </>
     );
   }

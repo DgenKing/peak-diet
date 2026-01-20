@@ -29,3 +29,14 @@ export const DietPlanSchema = z.object({
 });
 
 export type DietPlan = z.infer<typeof DietPlanSchema>;
+
+export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+
+export interface SavedPlan {
+  id: string;
+  name: string;
+  plan: DietPlan;
+  createdAt: number;
+}
+
+export type WeeklySchedule = Record<DayOfWeek, DietPlan | null>;
