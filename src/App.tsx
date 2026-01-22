@@ -24,6 +24,7 @@ import { AdvancedProblemsScreen } from './components/screens/advanced/AdvancedPr
 import { AdvancedOptionsScreen } from './components/screens/advanced/AdvancedOptionsScreen';
 
 import { GettingStartedScreen } from './components/screens/GettingStartedScreen';
+import { FeedbackScreen } from './components/screens/FeedbackScreen';
 
 // AI Services
 import { generateDietPlan, generateAdvancedDietPlan } from './services/ai';
@@ -108,7 +109,7 @@ const initialAdvancedData: AdvancedFormData = {
   allowSupplementRecs: true,
 };
 
-type Screen = 'landing' | 'getting-started' | 'mode-select' | 'simple' | 'advanced' | 'planner' | 'dashboard';
+type Screen = 'landing' | 'getting-started' | 'feedback' | 'mode-select' | 'simple' | 'advanced' | 'planner' | 'dashboard';
 
 function App() {
   const { theme, toggleTheme } = useTheme();
@@ -202,6 +203,7 @@ function App() {
         onToggleTheme={toggleTheme}
         onYourWeek={() => setScreen('planner')}
         onHowToUse={() => setScreen('getting-started')}
+        onFeedback={() => setScreen('feedback')}
         onClearWeek={() => {
           if (confirm('Clear all meal plans for the week?')) {
             clearWeek();
@@ -230,6 +232,16 @@ function App() {
       <>
         {menuElement}
         <GettingStartedScreen onBack={() => setScreen('landing')} />
+      </>
+    );
+  }
+
+  // Feedback
+  if (screen === 'feedback') {
+    return (
+      <>
+        {menuElement}
+        <FeedbackScreen onBack={() => setScreen('planner')} />
       </>
     );
   }

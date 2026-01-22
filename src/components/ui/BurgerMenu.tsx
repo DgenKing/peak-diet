@@ -5,10 +5,11 @@ interface BurgerMenuProps {
   onToggleTheme: () => void;
   onYourWeek: () => void;
   onHowToUse: () => void;
+  onFeedback: () => void;
   onClearWeek: () => void;
 }
 
-export function BurgerMenu({ theme, onToggleTheme, onYourWeek, onHowToUse, onClearWeek }: BurgerMenuProps) {
+export function BurgerMenu({ theme, onToggleTheme, onYourWeek, onHowToUse, onFeedback, onClearWeek }: BurgerMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -122,6 +123,20 @@ export function BurgerMenu({ theme, onToggleTheme, onYourWeek, onHowToUse, onCle
           >
             <span className="text-lg">❓</span>
             <span className="text-gray-700 dark:text-gray-200">How to Use</span>
+          </button>
+
+          <div className="h-px bg-gray-100 dark:bg-gray-800" />
+
+          {/* Feedback */}
+          <button
+            onClick={() => {
+              onFeedback();
+              setIsOpen(false);
+            }}
+            className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <span className="text-lg">💬</span>
+            <span className="text-gray-700 dark:text-gray-200">Send Feedback</span>
           </button>
 
           <div className="h-px bg-gray-100 dark:bg-gray-800" />
