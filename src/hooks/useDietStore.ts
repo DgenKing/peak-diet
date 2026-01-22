@@ -135,6 +135,15 @@ export function useDietStore() {
     });
   };
 
+  const clearWeek = () => {
+    setStore(prev => ({
+      ...prev,
+      weeklySchedule: initialSchedule,
+      cachedShoppingList: null,
+      shoppingListHash: null,
+    }));
+  };
+
   return {
     weeklySchedule: store.weeklySchedule,
     savedPlans: store.savedPlans,
@@ -148,5 +157,6 @@ export function useDietStore() {
     saveUserStats,
     saveShoppingList,
     clearShoppingListCache,
+    clearWeek,
   };
 }

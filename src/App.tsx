@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { AppMode, SimpleFormData, AdvancedFormData, SimpleStep, AdvancedStep } from './types';
 import { useTheme } from './hooks/useTheme';
-import { ThemeToggle } from './components/ui/ThemeToggle';
+import { BurgerMenu } from './components/ui/BurgerMenu';
 
 // Screens
 import { LandingScreen } from './components/screens/LandingScreen';
@@ -112,7 +112,7 @@ type Screen = 'landing' | 'getting-started' | 'mode-select' | 'simple' | 'advanc
 
 function App() {
   const { theme, toggleTheme } = useTheme();
-  const { weeklySchedule, setDayPlan, copyToDays, userStats, saveUserStats, cachedShoppingList, hasScheduleChanged, saveShoppingList } = useDietStore();
+  const { weeklySchedule, setDayPlan, copyToDays, userStats, saveUserStats, cachedShoppingList, hasScheduleChanged, saveShoppingList, clearWeek } = useDietStore();
   
   const [screen, setScreen] = useState<Screen>('landing');
   const [mode, setMode] = useState<AppMode | null>(null);
@@ -194,10 +194,19 @@ function App() {
     setActivePlan(updatedPlan);
   };
 
-  // Theme toggle - fixed position
-  const themeToggleElement = (
+  // Burger menu - fixed position (only shown on non-wizard screens)
+  const menuElement = (
     <div className="fixed top-[19px] right-[14px] z-50">
-      <ThemeToggle theme={theme} onToggle={toggleTheme} />
+      <BurgerMenu
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onHowToUse={() => setScreen('getting-started')}
+        onClearWeek={() => {
+          if (confirm('Clear all meal plans for the week?')) {
+            clearWeek();
+          }
+        }}
+      />
     </div>
   );
 
@@ -205,7 +214,7 @@ function App() {
   if (screen === 'landing') {
     return (
       <>
-        {themeToggleElement}
+        {menuElement}
         <LandingScreen 
           onStart={() => setScreen('planner')} 
           onTutorial={() => setScreen('getting-started')}
@@ -218,7 +227,7 @@ function App() {
   if (screen === 'getting-started') {
     return (
       <>
-        {themeToggleElement}
+        {menuElement}
         <GettingStartedScreen onBack={() => setScreen('landing')} />
       </>
     );
@@ -228,7 +237,7 @@ function App() {
   if (screen === 'planner') {
     return (
       <>
-        {themeToggleElement}
+        {menuElement}
         <WeeklyPlannerScreen
           schedule={weeklySchedule}
           onSelectDay={handleDaySelect}
@@ -245,21 +254,18 @@ function App() {
     );
   }
 
-  // Mode Select
+  // Mode Select - no menu (part of wizard flow)
   if (screen === 'mode-select') {
     return (
-      <>
-        {themeToggleElement}
-        <ModeSelectScreen
-          onSelect={(m) => {
-            setMode(m);
-            setScreen(m);
-            setSimpleStep('goal');
-            setAdvancedStep('goal');
-          }}
-          onBack={() => setScreen('planner')}
-        />
-      </>
+      <ModeSelectScreen
+        onSelect={(m) => {
+          setMode(m);
+          setScreen(m);
+          setSimpleStep('goal');
+          setAdvancedStep('goal');
+        }}
+        onBack={() => setScreen('planner')}
+      />
     );
   }
 
@@ -325,9 +331,12 @@ function App() {
       }
     })();
 
+    // No menu on wizard steps (goal, activity, food) - only on dashboard
+    const showMenu = simpleStep === 'dashboard';
+
     return (
       <>
-        {themeToggleElement}
+        {showMenu && menuElement}
         {content}
       </>
     );
@@ -433,9 +442,12 @@ function App() {
       }
     })();
 
+    // No menu on wizard steps - only on dashboard
+    const showMenu = advancedStep === 'dashboard';
+
     return (
       <>
-        {themeToggleElement}
+        {showMenu && menuElement}
         {content}
       </>
     );
@@ -445,7 +457,7 @@ function App() {
   if (screen === 'dashboard' && activePlan) {
     return (
       <>
-        {themeToggleElement}
+        {menuElement}
         <DietDashboardScreen
           initialPlan={activePlan}
           dayName={activeDay || undefined}

@@ -2,6 +2,7 @@ import { RadioCard } from '../../ui/RadioCard';
 import { Slider } from '../../ui/Slider';
 import { Button } from '../../ui/Button';
 import { ProgressBar } from '../../ui/ProgressBar';
+import { BackButton } from '../../ui/BackButton';
 import type { SimpleFormData, TrainingType } from '../../../types';
 
 interface SimpleActivityScreenProps {
@@ -29,23 +30,14 @@ export function SimpleActivityScreen({ data, onChange, onNext, onBack }: SimpleA
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+      {/* Header - Back button then Progress bar */}
+      <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-4">
+        <BackButton onClick={onBack} />
         <ProgressBar current={2} total={4} />
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back
-        </button>
-
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Activity Level
         </h1>

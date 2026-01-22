@@ -1,6 +1,7 @@
 import { Input } from '../../ui/Input';
 import { Button } from '../../ui/Button';
 import { ProgressBar } from '../../ui/ProgressBar';
+import { BackButton } from '../../ui/BackButton';
 import { workSchedules, fastingOptions } from '../../../data/options';
 import type { AdvancedFormData, SleepQuality, StressLevel, Frequency } from '../../../types';
 
@@ -46,21 +47,13 @@ const cookingForOptions = [
 export function AdvancedLifestyleScreen({ data, onChange, onNext, onBack }: AdvancedLifestyleScreenProps) {
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+      {/* Header - Back button then Progress bar */}
+      <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-4">
+        <BackButton onClick={onBack} />
         <ProgressBar current={5} total={8} label="Step 5 of 8 - Lifestyle" />
       </div>
 
       <div className="flex-1 overflow-auto p-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back
-        </button>
-
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Lifestyle & Timing</h1>
         <p className="text-gray-500 dark:text-gray-400 mb-6">Help us understand your daily routine</p>
 

@@ -1,80 +1,113 @@
 import { useState } from 'react';
 import { Button } from '../ui/Button';
+import { BackButton } from '../ui/BackButton';
+import logo from '../../assets/logo.png';
 
 type Step = {
   id: string;
   title: string;
-  icon: React.ReactNode;
-  hook: string;
-  actions: string[];
-  troubleshooting?: string;
-  codeSnippet?: {
-    lang: string;
-    code: string;
-  };
+  icon: string;
+  description: string;
+  details: string[];
+  tip?: string;
 };
 
 const steps: Step[] = [
   {
-    id: 'env-setup',
-    title: 'Environment Setup',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-    hook: "Configure your local environment to communicate with external AI services securely.",
-    actions: [
-      "Copy the example environment file.",
-      "Add your DeepSeek API key.",
-      "Restart the development server."
+    id: 'weekly-planner',
+    title: 'Your Weekly Planner',
+    icon: '📅',
+    description: "The home screen shows your 7-day meal plan calendar. Start by tapping any day to create a diet plan for it.",
+    details: [
+      "Each day shows a preview of your plan or 'Empty' if not set",
+      "Green checkmarks indicate days with completed plans",
+      "Tap a day to view, edit, or create a new plan",
+      "Clear any day by tapping the X button"
     ],
-    codeSnippet: {
-      lang: "bash",
-      code: "cp .env.example .env\n# Edit .env and add VITE_DEEPSEEK_API_KEY=your_key_here"
-    }
+    tip: "Fill all 7 days to unlock the AI Shopping List feature!"
   },
   {
-    id: 'deployment',
-    title: 'Deployment',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-      </svg>
-    ),
-    hook: "Push your application to production so you can access it from anywhere.",
-    actions: [
-      "Connect your GitHub repository to Vercel.",
-      "Add your environment variables in the Vercel dashboard.",
-      "Trigger a deployment."
+    id: 'choose-mode',
+    title: 'Choose Your Mode',
+    icon: '⚡',
+    description: "Pick between Simple Mode (4 quick steps) or Advanced Mode (8 detailed steps) based on how much control you want.",
+    details: [
+      "Simple Mode: Perfect for beginners - just goal, activity, food basics",
+      "Advanced Mode: Full customization - lifestyle, problems, supplements & more",
+      "Both modes generate the same quality AI diet plan",
+      "Use presets in Simple Mode to auto-fill common profiles"
     ],
-    troubleshooting: "If the build fails, check if you've included all necessary environment variables in the project settings. The build process needs access to the API keys if they are used during build time (though usually they are runtime)."
+    tip: "Not sure? Start with Simple Mode - you can always create a new Advanced plan later."
   },
   {
-    id: 'cron-jobs',
-    title: 'Cron Jobs & Automation',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    hook: "Set up automated tasks to refresh your diet plan or generate weekly shopping lists automatically.",
-    actions: [
-      "Create a vercel.json configuration file.",
-      "Define your cron job schedule.",
-      "Ensure your API endpoint handles the cron request."
+    id: 'enter-details',
+    title: 'Enter Your Details',
+    icon: '📝',
+    description: "Fill in your stats, goals, and food preferences. The more accurate you are, the better your plan will be.",
+    details: [
+      "Age, gender, height, weight are used to calculate your calories",
+      "Activity level affects your daily energy needs",
+      "Food preferences ensure you get meals you'll actually enjoy",
+      "Your stats are saved and auto-filled next time"
     ],
-    troubleshooting: "Warning: The Vercel Hobby Plan allows cron jobs to run only once per day. Setting a more frequent schedule (e.g., hourly) will result in deployment errors or the job failing to run.",
-    codeSnippet: {
-      lang: "json",
-      code: '// vercel.json\n{\n  "crons": [\n    {\n      "path": "/api/cron/refresh-plan",\n      "schedule": "0 5 * * *"\n    }\n  ]\n}'
-    }
+    tip: "Be honest with your activity level - overestimating leads to eating too much!"
+  },
+  {
+    id: 'ai-generation',
+    title: 'AI Generates Your Plan',
+    icon: '🤖',
+    description: "Our AI creates a personalized meal plan with exact portions, macros, and cooking tips tailored to your goals.",
+    details: [
+      "Daily calorie and macro targets calculated for your goal",
+      "Multiple meals with specific portions and ingredients",
+      "Macro breakdown for each meal (protein, carbs, fats)",
+      "Pro tips customized to your situation"
+    ],
+    tip: "Generation takes 5-15 seconds. Enjoy the nutrition tips while you wait!"
+  },
+  {
+    id: 'edit-plan',
+    title: 'Edit With Natural Language',
+    icon: '✏️',
+    description: "Don't like something? Just type what you want to change and the AI will update your plan instantly.",
+    details: [
+      '"Swap chicken for beef" - replaces ingredients',
+      '"Make lunch vegetarian" - dietary adjustments',
+      '"I\'m drinking 4 beers tonight, adjust my diet" - lifestyle changes',
+      '"Add a snack between lunch and dinner" - meal structure',
+      '"Reduce carbs and increase protein" - macro adjustments'
+    ],
+    tip: "Be specific! 'More protein' is good, 'Add 30g protein to dinner' is better."
+  },
+  {
+    id: 'copy-days',
+    title: 'Copy to Other Days',
+    icon: '📋',
+    description: "Love your plan? Copy it to other days of the week with one tap. Great for consistent meal prep.",
+    details: [
+      "Select multiple days to copy to at once",
+      "Days with existing plans show a warning",
+      "Each day's plan is independent after copying",
+      "Perfect for meal prep Sundays"
+    ]
+  },
+  {
+    id: 'shopping-list',
+    title: 'AI Shopping List',
+    icon: '🛒',
+    description: "When all 7 days are filled, generate a smart shopping list that combines all ingredients across the week.",
+    details: [
+      "Automatically consolidates duplicate ingredients",
+      "Organizes by category (Produce, Protein, Dairy, etc.)",
+      "Cached - only regenerates when you change a plan",
+      "One-tap copy to clipboard for easy shopping"
+    ],
+    tip: "The list is smart - '150g chicken' + '200g chicken' becomes '350g chicken'!"
   }
 ];
 
 export function GettingStartedScreen({ onBack }: { onBack: () => void }) {
-  const [expandedStep, setExpandedStep] = useState<string | null>(null);
+  const [expandedStep, setExpandedStep] = useState<string | null>('weekly-planner');
 
   const toggleStep = (id: string) => {
     setExpandedStep(expandedStep === id ? null : id);
@@ -83,108 +116,97 @@ export function GettingStartedScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100 p-6 md:p-12 font-sans">
       <div className="max-w-3xl mx-auto">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="secondary" onClick={onBack} size="sm">
-            ← Back
-          </Button>
-          <h1 className="text-3xl font-bold tracking-tight">Getting Started</h1>
+        <div className="mb-8">
+          <BackButton onClick={onBack} />
+          <h1 className="text-3xl font-bold tracking-tight mt-4">How to Use PeakDiet</h1>
         </div>
-        
-        <p className="text-lg text-gray-600 dark:text-gray-400 mb-10 leading-relaxed">
-          Welcome to PeakDiet. Follow these steps to configure your environment, deploy the app, and set up automation.
-        </p>
 
-        <div className="space-y-6">
-          {steps.map((step) => {
+        <div className="flex items-center gap-4 mb-8 p-4 bg-primary/10 dark:bg-primary/20 rounded-2xl">
+          <img src={logo} alt="PeakDiet" className="w-16 h-16 object-contain" />
+          <div>
+            <p className="text-lg font-medium text-gray-800 dark:text-gray-100">
+              Your AI-powered weekly meal planner
+            </p>
+            <p className="text-gray-600 dark:text-gray-400">
+              Generate personalized diet plans, edit them with natural language, and get smart shopping lists.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {steps.map((step, index) => {
             const isExpanded = expandedStep === step.id;
 
             return (
-              <div 
-                key={step.id} 
+              <div
+                key={step.id}
                 className={`
                   bg-white dark:bg-gray-900 rounded-2xl border transition-all duration-300 overflow-hidden
-                  ${isExpanded 
-                    ? 'border-primary shadow-lg ring-1 ring-primary/20' 
+                  ${isExpanded
+                    ? 'border-primary shadow-lg ring-1 ring-primary/20'
                     : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 shadow-sm'
                   }
                 `}
               >
-                {/* Header / Quick View */}
-                <div 
-                  className="p-6 flex items-start sm:items-center justify-between cursor-pointer gap-4 group"
+                {/* Header */}
+                <div
+                  className="p-5 flex items-center justify-between cursor-pointer gap-4 group"
                   onClick={() => toggleStep(step.id)}
                 >
-                  <div className="flex items-start sm:items-center gap-4 flex-1">
+                  <div className="flex items-center gap-4 flex-1">
                     <div className={`
-                      p-3 rounded-xl transition-colors
-                      ${isExpanded ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 group-hover:bg-gray-200 dark:group-hover:bg-gray-700'}
+                      w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-colors
+                      ${isExpanded ? 'bg-primary/20' : 'bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700'}
                     `}>
                       {step.icon}
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-1">{step.title}</h3>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">{step.hook}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                          Step {index + 1}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-bold">{step.title}</h3>
                     </div>
                   </div>
-                  
-                  <button 
-                    className={`
-                      shrink-0 text-sm font-medium transition-colors flex items-center gap-1
-                      ${isExpanded ? 'text-primary' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200'}
-                    `}
+
+                  <svg
+                    className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   >
-                    {isExpanded ? 'Hide Details' : 'Show Details'}
-                    <svg 
-                      className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
 
-                {/* Deep Dive Content */}
-                <div 
+                {/* Expanded Content */}
+                <div
                   className={`
                     border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20
                     transition-all duration-300 ease-in-out
-                    ${isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}
+                    ${isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}
                   `}
                 >
-                  <div className="p-6 sm:pl-20 sm:pr-10 space-y-6">
-                    
-                    {/* Actions List */}
-                    <div>
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">Steps</h4>
-                      <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                        {step.actions.map((action, idx) => (
-                          <li key={idx} className="pl-1">{action}</li>
-                        ))}
-                      </ol>
-                    </div>
+                  <div className="p-5 space-y-4">
+                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                      {step.description}
+                    </p>
 
-                    {/* Troubleshooting */}
-                    {step.troubleshooting && (
-                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4 rounded-r-lg">
-                        <div className="flex gap-3">
-                          <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
-                          <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                            <span className="font-bold">Important:</span> {step.troubleshooting}
+                    <ul className="space-y-2">
+                      {step.details.map((detail, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-gray-600 dark:text-gray-400">
+                          <span className="text-primary mt-1">•</span>
+                          <span>{detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {step.tip && (
+                      <div className="bg-primary/10 dark:bg-primary/20 border-l-4 border-primary p-4 rounded-r-lg">
+                        <div className="flex gap-2 items-start">
+                          <span className="text-lg">💡</span>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            <span className="font-bold">Tip:</span> {step.tip}
                           </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Code Snippet */}
-                    {step.codeSnippet && (
-                      <div>
-                        <h4 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">Configuration</h4>
-                        <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm overflow-x-auto border border-gray-700 shadow-inner">
-                          <pre className="text-gray-300">
-                            <code>{step.codeSnippet.code}</code>
-                          </pre>
                         </div>
                       </div>
                     )}
@@ -193,14 +215,31 @@ export function GettingStartedScreen({ onBack }: { onBack: () => void }) {
               </div>
             );
           })}
-          </div>
+        </div>
 
-          <div className="mt-12 text-center">
-            <Button size="lg" onClick={onBack}>
-              I'm Ready to Start
-            </Button>
+        <div className="mt-10 p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
+          <h3 className="text-lg font-bold mb-3">Quick Example Flow</h3>
+          <div className="flex flex-wrap gap-2 text-sm">
+            <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full">Open App</span>
+            <span className="text-gray-400">→</span>
+            <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full">Tap Monday</span>
+            <span className="text-gray-400">→</span>
+            <span className="px-3 py-1.5 bg-primary/20 text-primary rounded-full">Simple Mode</span>
+            <span className="text-gray-400">→</span>
+            <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full">Enter Stats</span>
+            <span className="text-gray-400">→</span>
+            <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full">Pick Foods</span>
+            <span className="text-gray-400">→</span>
+            <span className="px-3 py-1.5 bg-primary/20 text-primary rounded-full">Get Plan!</span>
           </div>
         </div>
+
+        <div className="mt-8 text-center">
+          <Button size="lg" onClick={onBack}>
+            Start Planning My Week
+          </Button>
+        </div>
       </div>
+    </div>
   );
 }

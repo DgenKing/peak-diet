@@ -202,7 +202,7 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
            <h1 className="text-xl font-bold flex items-center gap-2">Your Week</h1>
            <p className="text-xs text-gray-500">7 Day Overview</p>
         </div>
-        <div className="mr-[35px] flex gap-2">
+        <div className="mr-[50px] flex gap-2">
           {isFullWeek && (
             <Button variant="secondary" size="sm" onClick={handleOpenList}>
               🛒 List
