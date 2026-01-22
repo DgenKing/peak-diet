@@ -23,6 +23,8 @@ import { AdvancedLifestyleScreen } from './components/screens/advanced/AdvancedL
 import { AdvancedProblemsScreen } from './components/screens/advanced/AdvancedProblemsScreen';
 import { AdvancedOptionsScreen } from './components/screens/advanced/AdvancedOptionsScreen';
 
+import { GettingStartedScreen } from './components/screens/GettingStartedScreen';
+
 // AI Services
 import { generateDietPlan, generateAdvancedDietPlan } from './services/ai';
 import { useDietStore } from './hooks/useDietStore';
@@ -106,7 +108,7 @@ const initialAdvancedData: AdvancedFormData = {
   allowSupplementRecs: true,
 };
 
-type Screen = 'landing' | 'mode-select' | 'simple' | 'advanced' | 'planner' | 'dashboard';
+type Screen = 'landing' | 'getting-started' | 'mode-select' | 'simple' | 'advanced' | 'planner' | 'dashboard';
 
 function App() {
   const { theme, toggleTheme } = useTheme();
@@ -204,7 +206,20 @@ function App() {
     return (
       <>
         {themeToggleElement}
-        <LandingScreen onStart={() => setScreen('planner')} />
+        <LandingScreen 
+          onStart={() => setScreen('planner')} 
+          onTutorial={() => setScreen('getting-started')}
+        />
+      </>
+    );
+  }
+
+  // Getting Started Tutorial
+  if (screen === 'getting-started') {
+    return (
+      <>
+        {themeToggleElement}
+        <GettingStartedScreen onBack={() => setScreen('landing')} />
       </>
     );
   }

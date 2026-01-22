@@ -3,9 +3,10 @@ import logo from '../../assets/logo.png';
 
 interface LandingScreenProps {
   onStart: () => void;
+  onTutorial?: () => void;
 }
 
-export function LandingScreen({ onStart }: LandingScreenProps) {
+export function LandingScreen({ onStart, onTutorial }: LandingScreenProps) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
       <div className="max-w-md mx-auto">
@@ -44,9 +45,17 @@ export function LandingScreen({ onStart }: LandingScreenProps) {
         </div>
 
         {/* CTA */}
-        <Button size="lg" fullWidth onClick={onStart}>
-          Get Started
-        </Button>
+        <div className="space-y-3">
+          <Button size="lg" fullWidth onClick={onStart}>
+            Get Started
+          </Button>
+          
+          {onTutorial && (
+            <Button variant="secondary" fullWidth onClick={onTutorial}>
+              Setup Guide
+            </Button>
+          )}
+        </div>
 
         <p className="text-sm text-gray-400 dark:text-gray-500 mt-4">
           Free • No sign-up required
