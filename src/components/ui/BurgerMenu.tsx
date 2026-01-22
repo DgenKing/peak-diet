@@ -3,11 +3,12 @@ import { useState, useRef, useEffect } from 'react';
 interface BurgerMenuProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  onYourWeek: () => void;
   onHowToUse: () => void;
   onClearWeek: () => void;
 }
 
-export function BurgerMenu({ theme, onToggleTheme, onHowToUse, onClearWeek }: BurgerMenuProps) {
+export function BurgerMenu({ theme, onToggleTheme, onYourWeek, onHowToUse, onClearWeek }: BurgerMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -93,6 +94,20 @@ export function BurgerMenu({ theme, onToggleTheme, onHowToUse, onClearWeek }: Bu
                 }`}
               />
             </div>
+          </button>
+
+          <div className="h-px bg-gray-100 dark:bg-gray-800" />
+
+          {/* Your Week */}
+          <button
+            onClick={() => {
+              onYourWeek();
+              setIsOpen(false);
+            }}
+            className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <span className="text-lg">📅</span>
+            <span className="text-gray-700 dark:text-gray-200">Your Week</span>
           </button>
 
           <div className="h-px bg-gray-100 dark:bg-gray-800" />

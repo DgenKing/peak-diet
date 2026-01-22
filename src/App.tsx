@@ -200,6 +200,7 @@ function App() {
       <BurgerMenu
         theme={theme}
         onToggleTheme={toggleTheme}
+        onYourWeek={() => setScreen('planner')}
         onHowToUse={() => setScreen('getting-started')}
         onClearWeek={() => {
           if (confirm('Clear all meal plans for the week?')) {
