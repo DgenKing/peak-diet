@@ -116,6 +116,7 @@ function App() {
   const { weeklySchedule, setDayPlan, copyToDays, userStats, saveUserStats, cachedShoppingList, hasScheduleChanged, saveShoppingList, clearWeek } = useDietStore();
   
   const [screen, setScreen] = useState<Screen>('landing');
+  const [previousScreen, setPreviousScreen] = useState<Screen>('landing');
   const [mode, setMode] = useState<AppMode | null>(null);
   const [simpleStep, setSimpleStep] = useState<SimpleStep>('goal');
   const [advancedStep, setAdvancedStep] = useState<AdvancedStep>('goal');
@@ -202,8 +203,8 @@ function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
         onYourWeek={() => setScreen('planner')}
-        onHowToUse={() => setScreen('getting-started')}
-        onFeedback={() => setScreen('feedback')}
+        onHowToUse={() => { setPreviousScreen(screen); setScreen('getting-started'); }}
+        onFeedback={() => { setPreviousScreen(screen); setScreen('feedback'); }}
         onClearWeek={() => {
           if (confirm('Clear all meal plans for the week?')) {
             clearWeek();
@@ -220,7 +221,7 @@ function App() {
         {menuElement}
         <LandingScreen 
           onStart={() => setScreen('planner')} 
-          onTutorial={() => setScreen('getting-started')}
+          onTutorial={() => { setPreviousScreen('landing'); setScreen('getting-started'); }}
         />
       </>
     );
@@ -231,7 +232,7 @@ function App() {
     return (
       <>
         {menuElement}
-        <GettingStartedScreen onBack={() => setScreen('landing')} />
+        <GettingStartedScreen onBack={() => setScreen(previousScreen)} />
       </>
     );
   }
@@ -241,7 +242,7 @@ function App() {
     return (
       <>
         {menuElement}
-        <FeedbackScreen onBack={() => setScreen('planner')} />
+        <FeedbackScreen onBack={() => setScreen(previousScreen)} />
       </>
     );
   }
