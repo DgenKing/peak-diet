@@ -350,8 +350,9 @@ WHERE user_id = $1 AND is_active = true;
 - [x] **Plan Management**: `GET/POST /api/plans` for saving and retrieving plans.
 - [x] **Routing**: Configured `vercel.json` for API rewrites.
 
+- [x] **Weekly Schedules API**: `GET/POST/PATCH/DELETE /api/schedules` for managing 7-day layouts.
+
 ### Pending ⏳
-- [ ] **Weekly Schedules API**: `GET/POST/PATCH` for managing 7-day layouts.
 - [ ] **Token Usage Tracking**: Implementing middleware to track AI costs.
 - [ ] **Frontend Integration**: Updating `useDietStore.ts` to sync with the database.
 - [ ] **User Profile UI**: Screens for login, register, and changing usernames.
