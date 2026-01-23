@@ -173,7 +173,7 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
             </div>
           </div>
           <div className="relative mr-[40px]">
-            <Button variant="secondary" size="sm" onClick={() => setShowCopyMenu(!showCopyMenu)}>
+            <Button variant="outline" size="sm" onClick={() => setShowCopyMenu(!showCopyMenu)}>
               Copy to...
             </Button>
             

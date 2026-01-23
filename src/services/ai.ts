@@ -20,9 +20,11 @@ CRITICAL RULE: The sum of calories from all meals MUST match the "dailyTargets.c
 
 CRITICAL RULE: Do NOT include a "weekly grocery list" in the tips. This is a single-day plan. Only list ingredients needed for THIS day if asked, otherwise focus on preparation tips.
 
+CRITICAL RULE for "summary": Start the summary with the main foods/ingredients for the day (e.g., "Chicken, rice, broccoli, eggs, oats - ..." then continue with the plan strategy). This helps users quickly see what foods they'll be eating.
+
 Follow the following JSON schema strictly:
 {
-  "summary": "string",
+  "summary": "string (START with main foods, then describe strategy)",
   "dailyTargets": { "protein": number, "carbs": number, "fats": number, "calories": number },
   "meals": [
     {
@@ -38,7 +40,7 @@ Follow the following JSON schema strictly:
 `;
 
 const MOCK_PLAN: DietPlan = {
-  summary: "Based on your goal to build muscle, this plan focuses on high protein intake evenly distributed throughout the day.",
+  summary: "Oatmeal, chicken, rice, broccoli, salmon, quinoa - high protein plan for muscle building with balanced macros throughout the day.",
   dailyTargets: { calories: 2400, protein: 180, carbs: 250, fats: 80 },
   meals: [
     {
