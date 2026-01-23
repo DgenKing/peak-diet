@@ -25,6 +25,7 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
   const [chatInput, setChatInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showCopyMenu, setShowCopyMenu] = useState(false);
+  const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
 
   // Modal State
   const [modalConfig, setModalConfig] = useState<{
@@ -87,33 +88,42 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
     }
   };
 
-  const handleCopy = (day: DayOfWeek) => {
-    const isOccupied = occupiedDays.includes(day);
-    
-    const performCopy = () => {
-      if (onCopyToDays && plan) {
-        onCopyToDays([day]);
-        setModalConfig({
-          isOpen: true,
-          title: 'Success!',
-          message: `Your diet plan has been copied to ${day}.`,
-          onConfirm: () => {},
-        });
-      }
-    };
+  const toggleDaySelection = (day: DayOfWeek) => {
+    setSelectedDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
 
-    if (isOccupied) {
+  const handleCopySelected = () => {
+    if (selectedDays.length === 0 || !onCopyToDays || !plan) return;
+
+    const hasOccupied = selectedDays.some(day => occupiedDays.includes(day));
+
+    const performCopy = () => {
+      onCopyToDays(selectedDays);
+      const dayNames = selectedDays.length === 1 ? selectedDays[0] : `${selectedDays.length} days`;
       setModalConfig({
         isOpen: true,
-        title: 'Overwrite Plan?',
-        message: `A diet plan already exists for ${day}. Are you sure you want to replace it?`,
+        title: 'Success!',
+        message: `Your diet plan has been copied to ${dayNames}.`,
+        onConfirm: () => {},
+      });
+      setSelectedDays([]);
+      setShowCopyMenu(false);
+    };
+
+    if (hasOccupied) {
+      const occupiedSelected = selectedDays.filter(day => occupiedDays.includes(day));
+      setModalConfig({
+        isOpen: true,
+        title: 'Overwrite Plans?',
+        message: `Diet plans already exist for ${occupiedSelected.join(', ')}. Are you sure you want to replace them?`,
         variant: 'danger',
         onConfirm: performCopy,
       });
     } else {
       performCopy();
     }
-    setShowCopyMenu(false);
   };
 
   if (loading) {
@@ -180,26 +190,42 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
             {showCopyMenu && (
               <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <div className="p-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                  Duplicate to Day
+                  Select Days
                 </div>
                 <div className="max-h-[60vh] overflow-y-auto">
                   {daysList.filter(d => d !== dayName).map(day => {
                     const isOccupied = occupiedDays.includes(day);
+                    const isSelected = selectedDays.includes(day);
                     return (
-                      <button 
+                      <label
                         key={day}
-                        onClick={() => handleCopy(day)}
-                        className="w-full text-left px-4 py-3 text-sm hover:bg-primary/5 hover:text-primary transition-colors border-b border-gray-50 dark:border-gray-800 last:border-0 flex justify-between items-center"
+                        className="w-full px-4 py-3 text-sm hover:bg-primary/5 transition-colors border-b border-gray-50 dark:border-gray-800 last:border-0 flex items-center gap-3 cursor-pointer"
                       >
-                        <span className="font-medium">{day}</span>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleDaySelection(day)}
+                          className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <span className="font-medium flex-1">{day}</span>
                         {isOccupied && (
                           <span className="text-[10px] bg-primary/10 dark:bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">
                             Exists
                           </span>
                         )}
-                      </button>
+                      </label>
                     );
                   })}
+                </div>
+                <div className="p-3 border-t border-gray-100 dark:border-gray-800">
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    disabled={selectedDays.length === 0}
+                    onClick={handleCopySelected}
+                  >
+                    Copy to {selectedDays.length === 0 ? 'Selected' : selectedDays.length === 1 ? '1 Day' : `${selectedDays.length} Days`}
+                  </Button>
                 </div>
               </div>
             )}
