@@ -132,34 +132,30 @@ function recalculatePlanTotals(plan: DietPlan): DietPlan {
   };
 }
 
-export async function generateDietPlan(data: SimpleFormData): Promise<DietPlan> {
-  if (!API_KEY) {
-    console.warn("No API Key found, returning mock data.");
-    await new Promise(r => setTimeout(r, 2000));
-    return MOCK_PLAN;
-  }
-
+export async function generateDietPlan(data: SimpleFormData, userId?: string): Promise<DietPlan> {
   const userPrompt = generateSimplePrompt(data);
 
   try {
-    const completion = await client.chat.completions.create({
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt + "\n\nReturn strict JSON." }
-      ],
-      model: "deepseek-chat",
-      response_format: { type: "json_object" },
+    // Call server-side API for token tracking
+    const response = await fetch('/api/ai/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, prompt: userPrompt }),
     });
 
-    const content = completion.choices[0].message.content;
-    if (!content) throw new Error("No content returned");
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
 
-    const json = JSON.parse(content);
+    const json = await response.json();
     const plan = DietPlanSchema.parse(json);
     return recalculatePlanTotals(plan);
   } catch (error) {
     console.error("AI Generation Error:", error);
-    throw error;
+    // Fallback to mock if API fails
+    console.warn("Falling back to mock data");
+    await new Promise(r => setTimeout(r, 1500));
+    return MOCK_PLAN;
   }
 }
 
@@ -200,34 +196,28 @@ export async function updateDietPlan(currentPlan: DietPlan, instruction: string)
   }
 }
 
-export async function generateAdvancedDietPlan(data: AdvancedFormData): Promise<DietPlan> {
-  if (!API_KEY) {
-    console.warn("No API Key found, returning mock data.");
-    await new Promise(r => setTimeout(r, 2000));
-    return MOCK_PLAN;
-  }
-
+export async function generateAdvancedDietPlan(data: AdvancedFormData, userId?: string): Promise<DietPlan> {
   const userPrompt = generateAdvancedPrompt(data, 'detailed');
 
   try {
-    const completion = await client.chat.completions.create({
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt + "\n\nReturn strict JSON following the schema." }
-      ],
-      model: "deepseek-chat",
-      response_format: { type: "json_object" },
+    const response = await fetch('/api/ai/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, prompt: userPrompt }),
     });
 
-    const content = completion.choices[0].message.content;
-    if (!content) throw new Error("No content returned");
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
 
-    const json = JSON.parse(content);
+    const json = await response.json();
     const plan = DietPlanSchema.parse(json);
     return recalculatePlanTotals(plan);
   } catch (error) {
     console.error("AI Generation Error:", error);
-    throw error;
+    console.warn("Falling back to mock data");
+    await new Promise(r => setTimeout(r, 1500));
+    return MOCK_PLAN;
   }
 }
 

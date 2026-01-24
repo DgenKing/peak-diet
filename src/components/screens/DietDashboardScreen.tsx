@@ -22,6 +22,10 @@ interface DietDashboardScreenProps {
 
 const daysList: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+// Module-level promise cache to prevent StrictMode double-generation
+// Stores the in-flight promise so we can reuse it across remounts
+let pendingGeneration: Promise<DietPlan> | null = null;
+
 export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack, onSave, onCopyToDays, occupiedDays = [], pendingNavigation, onClearPendingNavigation }: DietDashboardScreenProps) {
   const [plan, setPlan] = useState<DietPlan | null>(initialPlan || null);
   const [loading, setLoading] = useState(!initialPlan && !!generatePlan);
@@ -52,31 +56,31 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
     onConfirm: () => {},
   });
 
-  // Initial generation
+  // Initial generation with promise caching to prevent StrictMode double-call
   useEffect(() => {
-    if (initialPlan) return;
-    if (!generatePlan) return;
+    if (initialPlan || !generatePlan) return;
 
-    let mounted = true;
     const load = async () => {
       try {
-        const generated = await generatePlan();
-        if (mounted) {
-          setPlan(generated);
-          setLoading(false);
-          onSave?.(generated);
+        // Reuse in-flight promise if exists, otherwise start new generation
+        if (!pendingGeneration) {
+          pendingGeneration = generatePlan();
         }
+        const generated = await pendingGeneration;
+        setPlan(generated);
+        setLoading(false);
+        onSave?.(generated);
       } catch (err) {
         console.error(err);
-        if (mounted) {
-          setError('Failed to generate plan. Please try again.');
-          setLoading(false);
-        }
+        setError('Failed to generate plan. Please try again.');
+        setLoading(false);
+      } finally {
+        pendingGeneration = null; // Clear for next generation
       }
     };
     load();
-    return () => { mounted = false; };
-  }, [generatePlan, initialPlan]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleUpdate = async () => {
     if (!chatInput.trim() || !plan) return;

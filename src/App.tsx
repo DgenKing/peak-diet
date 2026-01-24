@@ -29,6 +29,7 @@ import { FeedbackScreen } from './components/screens/FeedbackScreen';
 // AI Services
 import { generateDietPlan, generateAdvancedDietPlan } from './services/ai';
 import { useDietStore } from './hooks/useDietStore';
+import { useUser } from './hooks/useUser';
 import type { DayOfWeek, DietPlan } from './types/diet';
 
 const initialSimpleData: SimpleFormData = {
@@ -114,6 +115,7 @@ type Screen = 'landing' | 'getting-started' | 'feedback' | 'mode-select' | 'simp
 function App() {
   const { theme, toggleTheme } = useTheme();
   const { weeklySchedule, setDayPlan, copyToDays, userStats, saveUserStats, cachedShoppingList, hasScheduleChanged, saveShoppingList, clearWeek } = useDietStore();
+  const { userId } = useUser();
   
   const [screen, setScreen] = useState<Screen>('landing');
   const [previousScreen, setPreviousScreen] = useState<Screen>('landing');
@@ -357,7 +359,7 @@ function App() {
         case 'dashboard':
           return (
             <DietDashboardScreen
-              generatePlan={() => generateDietPlan(simpleData)}
+              generatePlan={() => generateDietPlan(simpleData, userId || undefined)}
               onBack={goBack}
               onSave={handlePlanGenerated}
               onCopyToDays={(days) => activePlan && copyToDays(activePlan, days)}
@@ -470,7 +472,7 @@ function App() {
         case 'dashboard':
           return (
             <DietDashboardScreen
-              generatePlan={() => generateAdvancedDietPlan(advancedData)}
+              generatePlan={() => generateAdvancedDietPlan(advancedData, userId || undefined)}
               onBack={goBack}
               onSave={handlePlanGenerated}
               onCopyToDays={(days) => activePlan && copyToDays(activePlan, days)}

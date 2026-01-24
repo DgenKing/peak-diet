@@ -21,12 +21,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(rows[0]);
     }
 
-    // Create new anonymous user
+    // Create new anonymous user with UPSERT to handle race conditions
     const username = generateFitnessUsername();
     const result = await db.query(
-      'INSERT INTO users (device_id, username, is_anonymous) VALUES ($1, $2, true) RETURNING *',
+      `INSERT INTO users (device_id, username, is_anonymous) VALUES ($1, $2, true)
+       ON CONFLICT (device_id) DO NOTHING
+       RETURNING *`,
       [device_id, username]
     );
+
+    // If RETURNING is empty (conflict occurred), fetch the existing user
+    if (result.rows.length === 0) {
+      const { rows: existing } = await db.query('SELECT * FROM users WHERE device_id = $1', [device_id]);
+      return res.status(200).json(existing[0]);
+    }
 
     return res.status(201).json(result.rows[0]);
   } catch (error) {
