@@ -6,6 +6,7 @@ import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { MealEditorModal } from '../MealEditorModal';
+import { useUser } from '../../hooks/useUser';
 
 interface DietDashboardScreenProps {
   generatePlan?: () => Promise<DietPlan>;
@@ -27,6 +28,7 @@ const daysList: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Fr
 let pendingGeneration: Promise<DietPlan> | null = null;
 
 export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack, onSave, onCopyToDays, occupiedDays = [], pendingNavigation, onClearPendingNavigation }: DietDashboardScreenProps) {
+  const { userId } = useUser();
   const [plan, setPlan] = useState<DietPlan | null>(initialPlan || null);
   const [loading, setLoading] = useState(!initialPlan && !!generatePlan);
   const [updating, setUpdating] = useState(false);
@@ -86,7 +88,7 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
     if (!chatInput.trim() || !plan) return;
     setUpdating(true);
     try {
-      const updated = await updateDietPlan(plan, chatInput);
+      const updated = await updateDietPlan(plan, chatInput, userId || undefined);
       setPlan(updated);
       onSave?.(updated);
       setChatInput('');

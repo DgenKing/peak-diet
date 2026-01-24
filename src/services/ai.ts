@@ -159,39 +159,36 @@ export async function generateDietPlan(data: SimpleFormData, userId?: string): P
   }
 }
 
-export async function updateDietPlan(currentPlan: DietPlan, instruction: string): Promise<DietPlan> {
-  if (!API_KEY) {
-    console.warn("No API Key found, returning mock update.");
-    await new Promise(r => setTimeout(r, 1500));
-    // Mock update logic
-    return {
-        ...currentPlan,
-        summary: "Updated based on: " + instruction,
-        meals: currentPlan.meals.map(m => ({
-          ...m,
-          name: m.name + (instruction.includes("chicken") ? " (Chicken added)" : "")
-        }))
-    };
-  }
-
+export async function updateDietPlan(currentPlan: DietPlan, instruction: string, userId?: string): Promise<DietPlan> {
   try {
-    const completion = await client.chat.completions.create({
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Current Plan JSON:\n${JSON.stringify(currentPlan)}\n\nUser Instruction: ${instruction}\n\nUpdate the plan based on the instruction and return the full new JSON.` }
-      ],
-      model: "deepseek-chat",
-      response_format: { type: "json_object" },
+    const response = await fetch('/api/ai/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, currentPlan, instruction }),
     });
 
-    const content = completion.choices[0].message.content;
-    if (!content) throw new Error("No content returned");
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
 
-    const json = JSON.parse(content);
+    const json = await response.json();
     const plan = DietPlanSchema.parse(json);
     return recalculatePlanTotals(plan);
   } catch (error) {
     console.error("AI Update Error:", error);
+    // Fallback logic for development if API is unavailable
+    if (!userId) {
+      console.warn("Falling back to mock update (no userId)");
+      await new Promise(r => setTimeout(r, 1500));
+      return {
+          ...currentPlan,
+          summary: "Updated based on: " + instruction,
+          meals: currentPlan.meals.map(m => ({
+            ...m,
+            name: m.name + (instruction.includes("chicken") ? " (Chicken added)" : "")
+          }))
+      };
+    }
     throw error;
   }
 }
