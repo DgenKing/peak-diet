@@ -352,11 +352,31 @@ WHERE user_id = $1 AND is_active = true;
 
 - [x] **Weekly Schedules API**: `GET/POST/PATCH/DELETE /api/schedules` for managing 7-day layouts.
 - [x] **Deployed to Production**: All API endpoints live on Vercel with Neon Postgres.
+- [x] **Token Usage Tracking (Generate)**: Server-side AI generation with token recording.
+  - [x] `api/lib/token.ts` - Token recording helper (recordTokenUsage function)
+  - [x] `api/ai/generate.ts` - Server-side diet plan generation with tracking
+  - [x] `src/services/ai.ts` - Updated generateDietPlan & generateAdvancedDietPlan to call server API
+  - [x] `api/lib/db.ts` - Fixed connection string fallback for local dev
+  - [x] `src/hooks/useUser.ts` - Auto-registers users on app load, provides userId
+  - [x] `src/App.tsx` - Passes userId to AI generation functions
+  - [x] `src/components/screens/DietDashboardScreen.tsx` - Promise caching to prevent StrictMode double-calls
+  - [x] `api/users/init.ts` - UPSERT pattern for race condition handling
+
+**Tested & Working:**
+- Token tracking verified in database (input/output tokens recorded per request)
+- API key now hidden on server (no more `dangerouslyAllowBrowser`)
+- Foreign key to users table ensures only valid users tracked
+- Single token_usage entry per generation (StrictMode double-call fixed)
+- Auto user registration on first visit
 
 ### Pending ⏳
-- [ ] **Token Usage Tracking**: Implementing middleware to track AI costs.
+- [ ] **Remaining AI Routes**: Migrate update, meal, shopping-list to server-side with tracking
+  - [ ] `api/ai/update.ts` - Update plans via chat (still client-side)
+  - [ ] `api/ai/meal.ts` - Update single meals (still client-side)
+  - [ ] `api/ai/shopping-list.ts` - Generate shopping lists (still client-side)
 - [ ] **Frontend Integration**: Updating `useDietStore.ts` to sync with the database.
 - [ ] **User Profile UI**: Screens for login, register, and changing usernames.
+- [ ] **Usage Dashboard**: Show users their token consumption stats
 
 ## Future Considerations
 
