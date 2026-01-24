@@ -46,7 +46,7 @@ export function UsageDashboardScreen({ onBack }: UsageDashboardScreenProps) {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
-      <LoadingSpinner size="lg" />
+      <LoadingSpinner title="Loading Stats..." />
     </div>
   );
 
