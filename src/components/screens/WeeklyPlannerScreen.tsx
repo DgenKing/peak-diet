@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import logo from '../../assets/logo.png';
 import { loadingTips } from '../../utils/loadingTips';
+import { useUser } from '../../hooks/useUser';
 
 interface WeeklyPlannerScreenProps {
   schedule: WeeklySchedule;
@@ -19,6 +20,7 @@ interface WeeklyPlannerScreenProps {
 const days: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGenerateNew, cachedShoppingList, hasScheduleChanged, onSaveShoppingList }: WeeklyPlannerScreenProps) {
+  const { userId } = useUser();
   const hasAnyPlans = Object.values(schedule).some(p => p !== null);
 
   const [modalConfig, setModalConfig] = useState<{
@@ -85,7 +87,7 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
     });
 
     try {
-      const list = await generateShoppingList(rawItems);
+      const list = await generateShoppingList(rawItems, userId || undefined);
       setShoppingListContent(list);
       onSaveShoppingList(list);
     } catch (err) {

@@ -318,9 +318,8 @@ WHERE user_id = $1 AND is_active = true;
 - `PATCH /api/schedules/:id/activate` - Set as active schedule
 - `DELETE /api/schedules/:id` - Delete a schedule
 
-### AI (existing, add tracking)
-- `POST /api/ai/generate` - Generate diet plan (track tokens)
-- `POST /api/ai/update` - Update diet plan via chat (track tokens)
+### AI
+- `POST /api/ai` - Consolidated endpoint (body action: `generate` | `update`)
 - `POST /api/ai/shopping-list` - Generate shopping list (track tokens)
 
 ## Vercel Postgres Setup
@@ -335,6 +334,24 @@ WHERE user_id = $1 AND is_active = true;
 3. Install: `npm install @vercel/postgres`
 4. Run migrations (or use Vercel's SQL editor)
 
+## API Consolidation (Hobby Plan Optimization)
+
+To stay within the Vercel Hobby plan limit of **12 Serverless Functions**, the API has been consolidated into single handlers per category:
+
+1.  **`api/ai.ts`**: Handles all AI-related tasks.
+    *   `POST { action: 'generate' }`: New diet plan.
+    *   `POST { action: 'update' }`: Update plan via chat.
+2.  **`api/auth.ts`**: Handles all authentication.
+    *   `POST { action: 'login' }`: Login.
+    *   `POST { action: 'register' }`: Registration/Upgrade.
+    *   `GET { action: 'me' }`: Current user profile.
+3.  **`api/users.ts`**: User management (replaces `init.ts`).
+4.  **`api/plans.ts`**: Plan saving/loading.
+5.  **`api/schedules.ts`**: Weekly schedule management.
+6.  **`api/schedules/[id].ts`**: Individual schedule operations (dynamic route).
+
+Total function count: **6** (well under the 12 limit).
+
 ## Implementation Progress
 
 ### Done ✅
@@ -343,42 +360,30 @@ WHERE user_id = $1 AND is_active = true;
 - [x] **DB Connection**: Set up in `api/lib/db.ts` using `@vercel/postgres`.
 - [x] **Auth System**:
     - [x] JWT-based authentication in `api/lib/auth.ts`.
-    - [x] `POST /api/auth/register` (Account creation/upgrade).
-    - [x] `POST /api/auth/login` (Authentication).
-    - [x] `GET /api/auth/me` (Profile retrieval).
-- [x] **User Initialization**: `POST /api/users/init` for anonymous device tracking.
-- [x] **Plan Management**: `GET/POST /api/plans` for saving and retrieving plans.
-- [x] **Routing**: Configured `vercel.json` for API rewrites.
-
+    - [x] Consolidated `api/auth.ts` (Login, Register, Me).
+- [x] **User Initialization**: `POST /api/users` for anonymous device tracking.
+- [x] **Plan Management**: `GET/POST/PATCH/DELETE /api/plans` for full CRUD.
+- [x] **Routing**: Simplified to single files in `api/` root for Hobby plan.
 - [x] **Weekly Schedules API**: `GET/POST/PATCH/DELETE /api/schedules` for managing 7-day layouts.
 - [x] **Deployed to Production**: All API endpoints live on Vercel with Neon Postgres.
-- [x] **Token Usage Tracking (Generate)**: Server-side AI generation with token recording.
-  - [x] `api/lib/token.ts` - Token recording helper (recordTokenUsage function)
-  - [x] `api/ai/generate.ts` - Server-side diet plan generation with tracking
-  - [x] `src/services/ai.ts` - Updated generateDietPlan & generateAdvancedDietPlan to call server API
-  - [x] `api/lib/db.ts` - Fixed connection string fallback for local dev
-  - [x] `src/hooks/useUser.ts` - Auto-registers users on app load, provides userId
-  - [x] `src/App.tsx` - Passes userId to AI generation functions
-  - [x] `src/components/screens/DietDashboardScreen.tsx` - Promise caching to prevent StrictMode double-calls
-  - [x] `api/users/init.ts` - UPSERT pattern for race condition handling
+- [x] **Token Usage Tracking (Full AI Suite)**: Server-side AI generation, updates, and shopping lists with token recording.
+  - [x] `api/lib/token.ts` - Token recording helper.
+  - [x] `api/ai.ts` - Consolidated server-side AI handling.
+- [x] **User Profile UI**: `AuthModal.tsx` for login/register, integrated into `BurgerMenu`.
+- [x] **Frontend Integration**: `useDietStore.ts` synchronized with database for registered users.
+  - [x] Auto-sync on login.
+  - [x] Persistence for weekly schedules.
+  - [x] Full library sync (save/delete).
+- [x] **Usage Dashboard**: `UsageDashboardScreen.tsx` displaying token consumption stats.
+  - [x] `api/usage.ts` endpoint for aggregated usage data.
+  - [x] Integrated into `BurgerMenu`.
 
 **Tested & Working:**
-- Token tracking verified in database (input/output tokens recorded per request)
-- API key now hidden on server (no more `dangerouslyAllowBrowser`)
-- Foreign key to users table ensures only valid users tracked
-- Single token_usage entry per generation (StrictMode double-call fixed)
-- Auto user registration on first visit
+- **Full Application Lifecycle**: From anonymous generation to account registration and cross-device sync.
+- **Token Economy**: Every AI interaction tracked and visible to the user.
+- **Hobby Plan Optimized**: Entire backend fits within 7 serverless functions.
 
-### Pending ⏳
-- [ ] **Remaining AI Routes**: Migrate update, meal, shopping-list to server-side with tracking
-  - [ ] `api/ai/update.ts` - Update plans via chat (still client-side)
-  - [ ] `api/ai/meal.ts` - Update single meals (still client-side)
-  - [ ] `api/ai/shopping-list.ts` - Generate shopping lists (still client-side)
-- [ ] **Frontend Integration**: Updating `useDietStore.ts` to sync with the database.
-- [ ] **User Profile UI**: Screens for login, register, and changing usernames.
-- [ ] **Usage Dashboard**: Show users their token consumption stats
-
-## Future Considerations
+### Future Considerations
 
 ### Saved Plans with Slots
 - Limit saves to 3 slots (free users), more for premium

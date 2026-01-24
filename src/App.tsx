@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import type { AppMode, SimpleFormData, AdvancedFormData, SimpleStep, AdvancedStep } from './types';
 import { useTheme } from './hooks/useTheme';
 import { BurgerMenu } from './components/ui/BurgerMenu';
+import { AuthModal } from './components/AuthModal';
+import { Modal } from './components/ui/Modal';
 
 // Screens
 import { LandingScreen } from './components/screens/LandingScreen';
 import { ModeSelectScreen } from './components/screens/ModeSelectScreen';
 import { WeeklyPlannerScreen } from './components/screens/WeeklyPlannerScreen';
+import { UsageDashboardScreen } from './components/screens/UsageDashboardScreen';
 
 // Simple Mode
 import { SimpleGoalScreen } from './components/screens/simple/SimpleGoalScreen';
@@ -110,12 +113,12 @@ const initialAdvancedData: AdvancedFormData = {
   allowSupplementRecs: true,
 };
 
-type Screen = 'landing' | 'getting-started' | 'feedback' | 'mode-select' | 'simple' | 'advanced' | 'planner' | 'dashboard';
+type Screen = 'landing' | 'getting-started' | 'feedback' | 'mode-select' | 'simple' | 'advanced' | 'planner' | 'dashboard' | 'usage';
 
 function App() {
   const { theme, toggleTheme } = useTheme();
   const { weeklySchedule, setDayPlan, copyToDays, userStats, saveUserStats, cachedShoppingList, hasScheduleChanged, saveShoppingList, clearWeek } = useDietStore();
-  const { userId } = useUser();
+  const { userId, username, isAnonymous, logout } = useUser();
   
   const [screen, setScreen] = useState<Screen>('landing');
   const [previousScreen, setPreviousScreen] = useState<Screen>('landing');
@@ -127,6 +130,9 @@ function App() {
   
   const [activeDay, setActiveDay] = useState<DayOfWeek | null>(null);
   const [activePlan, setActivePlan] = useState<DietPlan | null>(null);
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isLogoutSuccessOpen, setIsLogoutSuccessOpen] = useState(false);
 
   // For burger menu navigation guard on unsaved plans
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
@@ -175,7 +181,6 @@ function App() {
   };
 
   const handlePlanGenerated = (plan: DietPlan) => {
-    // Save user stats for next time
     const currentStats = mode === 'simple' ? simpleData : advancedData;
     saveUserStats({
       age: currentStats.age,
@@ -201,8 +206,12 @@ function App() {
     setActivePlan(updatedPlan);
   };
 
-  // Burger menu - fixed position (only shown on non-wizard screens)
-  const menuElement = (
+  const handleLogout = async () => {
+    await logout();
+    setIsLogoutSuccessOpen(true);
+  };
+
+  const renderMenu = (useGuard = false) => (
     <div className="fixed top-[19px] right-[14px] z-50">
       <BurgerMenu
         theme={theme}
@@ -215,34 +224,39 @@ function App() {
             clearWeek();
           }
         }}
+        username={username}
+        isAnonymous={isAnonymous}
+        onSignIn={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
+        onUsage={() => { setPreviousScreen(screen); setScreen('usage'); }}
+        onBeforeNavigate={useGuard ? (navigateFn) => setPendingNavigation(() => navigateFn) : undefined}
       />
     </div>
   );
 
-  // Guarded menu for dashboard - checks with dashboard before navigating
-  const guardedMenuElement = (
-    <div className="fixed top-[19px] right-[14px] z-50">
-      <BurgerMenu
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onYourWeek={() => setScreen('planner')}
-        onHowToUse={() => { setPreviousScreen(screen); setScreen('getting-started'); }}
-        onFeedback={() => { setPreviousScreen(screen); setScreen('feedback'); }}
-        onClearWeek={() => {
-          if (confirm('Clear all meal plans for the week?')) {
-            clearWeek();
-          }
-        }}
-        onBeforeNavigate={(navigateFn) => setPendingNavigation(() => navigateFn)}
+  const sharedUI = (
+    <>
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
       />
-    </div>
+      <Modal
+        isOpen={isLogoutSuccessOpen}
+        onClose={() => setIsLogoutSuccessOpen(false)}
+        title="Signed Out"
+        message="You have been successfully signed out. Your data will now be stored locally until you sign in again."
+        variant="success"
+        showFooter={false}
+      />
+    </>
   );
 
   // Landing
   if (screen === 'landing') {
     return (
       <>
-        {menuElement}
+        {renderMenu()}
+        {sharedUI}
         <LandingScreen 
           onStart={() => setScreen('planner')} 
           onTutorial={() => { setPreviousScreen('landing'); setScreen('getting-started'); }}
@@ -255,7 +269,8 @@ function App() {
   if (screen === 'getting-started') {
     return (
       <>
-        {menuElement}
+        {renderMenu()}
+        {sharedUI}
         <GettingStartedScreen onBack={() => setScreen(previousScreen)} />
       </>
     );
@@ -265,8 +280,19 @@ function App() {
   if (screen === 'feedback') {
     return (
       <>
-        {menuElement}
+        {renderMenu()}
+        {sharedUI}
         <FeedbackScreen onBack={() => setScreen(previousScreen)} />
+      </>
+    );
+  }
+
+  // Usage Dashboard
+  if (screen === 'usage') {
+    return (
+      <>
+        {sharedUI}
+        <UsageDashboardScreen onBack={() => setScreen(previousScreen)} />
       </>
     );
   }
@@ -275,7 +301,8 @@ function App() {
   if (screen === 'planner') {
     return (
       <>
-        {menuElement}
+        {renderMenu()}
+        {sharedUI}
         <WeeklyPlannerScreen
           schedule={weeklySchedule}
           onSelectDay={handleDaySelect}
@@ -292,18 +319,21 @@ function App() {
     );
   }
 
-  // Mode Select - no menu (part of wizard flow)
+  // Mode Select
   if (screen === 'mode-select') {
     return (
-      <ModeSelectScreen
-        onSelect={(m) => {
-          setMode(m);
-          setScreen(m);
-          setSimpleStep('goal');
-          setAdvancedStep('goal');
-        }}
-        onBack={() => setScreen('planner')}
-      />
+      <>
+        {sharedUI}
+        <ModeSelectScreen
+          onSelect={(m) => {
+            setMode(m);
+            setScreen(m);
+            setSimpleStep('goal');
+            setAdvancedStep('goal');
+          }}
+          onBack={() => setScreen('planner')}
+        />
+      </>
     );
   }
 
@@ -330,32 +360,11 @@ function App() {
     const content = (() => {
       switch (simpleStep) {
         case 'goal':
-          return (
-            <SimpleGoalScreen
-              data={simpleData}
-              onChange={updateSimpleData}
-              onNext={goNext}
-              onBack={goBack}
-            />
-          );
+          return <SimpleGoalScreen data={simpleData} onChange={updateSimpleData} onNext={goNext} onBack={goBack} />;
         case 'activity':
-          return (
-            <SimpleActivityScreen
-              data={simpleData}
-              onChange={updateSimpleData}
-              onNext={goNext}
-              onBack={goBack}
-            />
-          );
+          return <SimpleActivityScreen data={simpleData} onChange={updateSimpleData} onNext={goNext} onBack={goBack} />;
         case 'food':
-          return (
-            <SimpleFoodScreen
-              data={simpleData}
-              onChange={updateSimpleData}
-              onNext={goNext}
-              onBack={goBack}
-            />
-          );
+          return <SimpleFoodScreen data={simpleData} onChange={updateSimpleData} onNext={goNext} onBack={goBack} />;
         case 'dashboard':
           return (
             <DietDashboardScreen
@@ -371,12 +380,12 @@ function App() {
       }
     })();
 
-    // No menu on wizard steps (goal, activity, food) - only on dashboard
     const showMenu = simpleStep === 'dashboard';
 
     return (
       <>
-        {showMenu && guardedMenuElement}
+        {showMenu && renderMenu(true)}
+        {sharedUI}
         {content}
       </>
     );
@@ -406,69 +415,13 @@ function App() {
 
     const content = (() => {
       switch (advancedStep) {
-        case 'goal':
-          return (
-            <AdvancedGoalScreen
-              data={advancedData}
-              onChange={updateAdvancedData}
-              onNext={goNext}
-              onBack={goBack}
-            />
-          );
-        case 'stats':
-          return (
-            <AdvancedStatsScreen
-              data={advancedData}
-              onChange={updateAdvancedData}
-              onNext={goNext}
-              onBack={goBack}
-            />
-          );
-        case 'activity':
-          return (
-            <AdvancedActivityScreen
-              data={advancedData}
-              onChange={updateAdvancedData}
-              onNext={goNext}
-              onBack={goBack}
-            />
-          );
-        case 'food':
-          return (
-            <AdvancedFoodScreen
-              data={advancedData}
-              onChange={updateAdvancedData}
-              onNext={goNext}
-              onBack={goBack}
-            />
-          );
-        case 'lifestyle':
-          return (
-            <AdvancedLifestyleScreen
-              data={advancedData}
-              onChange={updateAdvancedData}
-              onNext={goNext}
-              onBack={goBack}
-            />
-          );
-        case 'problems':
-          return (
-            <AdvancedProblemsScreen
-              data={advancedData}
-              onChange={updateAdvancedData}
-              onNext={goNext}
-              onBack={goBack}
-            />
-          );
-        case 'options':
-          return (
-            <AdvancedOptionsScreen
-              data={advancedData}
-              onChange={updateAdvancedData}
-              onNext={goNext}
-              onBack={goBack}
-            />
-          );
+        case 'goal': return <AdvancedGoalScreen data={advancedData} onChange={updateAdvancedData} onNext={goNext} onBack={goBack} />;
+        case 'stats': return <AdvancedStatsScreen data={advancedData} onChange={updateAdvancedData} onNext={goNext} onBack={goBack} />;
+        case 'activity': return <AdvancedActivityScreen data={advancedData} onChange={updateAdvancedData} onNext={goNext} onBack={goBack} />;
+        case 'food': return <AdvancedFoodScreen data={advancedData} onChange={updateAdvancedData} onNext={goNext} onBack={goBack} />;
+        case 'lifestyle': return <AdvancedLifestyleScreen data={advancedData} onChange={updateAdvancedData} onNext={goNext} onBack={goBack} />;
+        case 'problems': return <AdvancedProblemsScreen data={advancedData} onChange={updateAdvancedData} onNext={goNext} onBack={goBack} />;
+        case 'options': return <AdvancedOptionsScreen data={advancedData} onChange={updateAdvancedData} onNext={goNext} onBack={goBack} />;
         case 'dashboard':
           return (
             <DietDashboardScreen
@@ -484,22 +437,23 @@ function App() {
       }
     })();
 
-    // No menu on wizard steps - only on dashboard
     const showMenu = advancedStep === 'dashboard';
 
     return (
       <>
-        {showMenu && guardedMenuElement}
+        {showMenu && renderMenu(true)}
+        {sharedUI}
         {content}
       </>
     );
   }
 
-  // Final Dashboard View (Existing Plan)
+  // Final Dashboard View
   if (screen === 'dashboard' && activePlan) {
     return (
       <>
-        {guardedMenuElement}
+        {renderMenu(true)}
+        {sharedUI}
         <DietDashboardScreen
           initialPlan={activePlan}
           dayName={activeDay || undefined}

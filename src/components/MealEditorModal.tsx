@@ -3,6 +3,7 @@ import type { Meal, Macro } from '../types/diet';
 import { updateMeal } from '../services/ai';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import { useUser } from '../hooks/useUser';
 
 interface MealEditorModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export function MealEditorModal({
   dailyTargets,
   onMealUpdated,
 }: MealEditorModalProps) {
+  const { userId } = useUser();
   const [instruction, setInstruction] = useState('');
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +57,7 @@ export function MealEditorModal({
     setError(null);
 
     try {
-      const updated = await updateMeal(meal, instruction, dailyTargets);
+      const updated = await updateMeal(meal, instruction, dailyTargets, userId || undefined);
       onMealUpdated(updated, mealIndex);
       onClose();
     } catch (err) {

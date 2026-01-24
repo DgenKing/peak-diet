@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { DayOfWeek, DietPlan, SavedPlan, WeeklySchedule } from '../types/diet';
+import { useUser } from './useUser';
 
 const STORAGE_KEY = 'peak_diet_store';
 
@@ -32,6 +33,9 @@ const initialSchedule: WeeklySchedule = {
 };
 
 export function useDietStore() {
+  const { isAnonymous, user } = useUser();
+  const [loading, setLoading] = useState(false);
+  
   const [store, setStore] = useState<DietStore>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -50,6 +54,41 @@ export function useDietStore() {
     };
   });
 
+  // Fetch from database on login
+  useEffect(() => {
+    if (!isAnonymous && user) {
+      const syncFromDB = async () => {
+        setLoading(true);
+        try {
+          // Fetch plans
+          const plansRes = await fetch('/api/plans');
+          const plansData = await plansRes.json();
+          
+          // Fetch schedules
+          const schedulesRes = await fetch('/api/schedules');
+          const schedulesData = await schedulesRes.json();
+          const activeSchedule = schedulesData.find((s: any) => s.is_active);
+
+          setStore(prev => ({
+            ...prev,
+            savedPlans: Array.isArray(plansData) ? plansData.map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              plan: p.plan_data,
+              createdAt: new Date(p.created_at).getTime()
+            })) : prev.savedPlans,
+            weeklySchedule: activeSchedule ? activeSchedule.schedule_data : prev.weeklySchedule
+          }));
+        } catch (err) {
+          console.error('Failed to sync from DB:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      syncFromDB();
+    }
+  }, [isAnonymous, user]);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
   }, [store]);
@@ -58,7 +97,6 @@ export function useDietStore() {
     setStore(prev => ({ ...prev, userStats: stats }));
   };
 
-  // Generate a hash from the schedule to detect changes
   const generateScheduleHash = (schedule: WeeklySchedule): string => {
     const items: string[] = [];
     const days: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -94,21 +132,66 @@ export function useDietStore() {
     }));
   };
 
+  const syncScheduleToDB = useCallback(async (schedule: WeeklySchedule) => {
+    if (isAnonymous) return;
+    try {
+      await fetch('/api/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Current Schedule',
+          schedule_data: schedule,
+          is_active: true
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to sync schedule to DB:', err);
+    }
+  }, [isAnonymous]);
+
   const setDayPlan = (day: DayOfWeek, plan: DietPlan | null) => {
+    const newSchedule = {
+      ...store.weeklySchedule,
+      [day]: plan ? JSON.parse(JSON.stringify(plan)) : null
+    };
     setStore(prev => ({
       ...prev,
-      weeklySchedule: {
-        ...prev.weeklySchedule,
-        [day]: plan ? JSON.parse(JSON.stringify(plan)) : null // Deep copy to ensure independence
-      }
+      weeklySchedule: newSchedule
     }));
+    syncScheduleToDB(newSchedule);
   };
 
-  const saveToLibrary = (name: string, plan: DietPlan) => {
+  const saveToLibrary = async (name: string, plan: DietPlan) => {
+    const planData = JSON.parse(JSON.stringify(plan));
+    
+    if (!isAnonymous) {
+      try {
+        const res = await fetch('/api/plans', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, plan_data: planData }),
+        });
+        const saved = await res.json();
+        const newSaved: SavedPlan = {
+          id: saved.id,
+          name: saved.name,
+          plan: saved.plan_data,
+          createdAt: new Date(saved.created_at).getTime(),
+        };
+        setStore(prev => ({
+          ...prev,
+          savedPlans: [...prev.savedPlans, newSaved],
+        }));
+        return saved.id;
+      } catch (err) {
+        console.error('Failed to save plan to DB:', err);
+      }
+    }
+
     const newSaved: SavedPlan = {
       id: crypto.randomUUID(),
       name,
-      plan: JSON.parse(JSON.stringify(plan)),
+      plan: planData,
       createdAt: Date.now(),
     };
     setStore(prev => ({
@@ -118,7 +201,18 @@ export function useDietStore() {
     return newSaved.id;
   };
 
-  const deleteFromLibrary = (id: string) => {
+  const deleteFromLibrary = async (id: string) => {
+    if (!isAnonymous) {
+      try {
+        await fetch('/api/plans', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+      } catch (err) {
+        console.error('Failed to delete plan from DB:', err);
+      }
+    }
     setStore(prev => ({
       ...prev,
       savedPlans: prev.savedPlans.filter(p => p.id !== id),
@@ -126,22 +220,23 @@ export function useDietStore() {
   };
 
   const copyToDays = (plan: DietPlan, days: DayOfWeek[]) => {
-    setStore(prev => {
-      const newSchedule = { ...prev.weeklySchedule };
-      days.forEach(day => {
-        newSchedule[day] = JSON.parse(JSON.stringify(plan));
-      });
-      return { ...prev, weeklySchedule: newSchedule };
+    const newSchedule = { ...store.weeklySchedule };
+    days.forEach(day => {
+      newSchedule[day] = JSON.parse(JSON.stringify(plan));
     });
+    setStore(prev => ({ ...prev, weeklySchedule: newSchedule }));
+    syncScheduleToDB(newSchedule);
   };
 
   const clearWeek = () => {
+    const newSchedule = initialSchedule;
     setStore(prev => ({
       ...prev,
-      weeklySchedule: initialSchedule,
+      weeklySchedule: newSchedule,
       cachedShoppingList: null,
       shoppingListHash: null,
     }));
+    syncScheduleToDB(newSchedule);
   };
 
   return {
@@ -150,6 +245,7 @@ export function useDietStore() {
     userStats: store.userStats,
     cachedShoppingList: store.cachedShoppingList,
     hasScheduleChanged,
+    loading,
     setDayPlan,
     saveToLibrary,
     deleteFromLibrary,
