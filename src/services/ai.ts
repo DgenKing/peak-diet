@@ -13,41 +13,6 @@ const client = new OpenAI({
   dangerouslyAllowBrowser: true
 });
 
-const SYSTEM_PROMPT = `You are an expert nutritionist. You must output STRICT JSON only.
-Your goal is to generate a personalized diet plan based on the user's profile.
-
-CRITICAL MATH RULE - YOU MUST VERIFY THIS BEFORE RESPONDING:
-1. Add up ALL meal calories - must equal dailyTargets.calories (±5%)
-2. Add up ALL meal protein - must equal dailyTargets.protein (±5%)
-3. Add up ALL meal carbs - must equal dailyTargets.carbs (±5%)
-4. Add up ALL meal fats - must equal dailyTargets.fats (±5%)
-
-EXAMPLE: If target is 2000 kcal and 180g protein, meals must add to ~2000 kcal and ~180g protein.
-If your meals only add to 1500 kcal, INCREASE PORTIONS until they reach 2000 kcal.
-
-DO NOT output a plan where meals don't add up. Verify the math mentally before responding.
-
-CRITICAL RULE: Do NOT include a "weekly grocery list" in the tips. This is a single-day plan. Only list ingredients needed for THIS day if asked, otherwise focus on preparation tips.
-
-CRITICAL RULE for "summary": Start the summary with the main foods/ingredients for the day (e.g., "Chicken, rice, broccoli, eggs, oats - ..." then continue with the plan strategy). This helps users quickly see what foods they'll be eating.
-
-Follow the following JSON schema strictly:
-{
-  "summary": "string (START with main foods, then describe strategy)",
-  "dailyTargets": { "protein": number, "carbs": number, "fats": number, "calories": number },
-  "meals": [
-    {
-      "name": "string",
-      "time": "string (optional)",
-      "items": [{ "name": "string", "amount": "string", "macros": { "protein": number, "carbs": number, "fats": number, "calories": number } (optional) }],
-      "totalMacros": { "protein": number, "carbs": number, "fats": number, "calories": number } (optional),
-      "instructions": "string (optional)"
-    }
-  ],
-  "tips": ["string"]
-}
-`;
-
 const MOCK_PLAN: DietPlan = {
   summary: "Oatmeal, chicken, rice, broccoli, salmon, quinoa - high protein plan for muscle building with balanced macros throughout the day.",
   dailyTargets: { calories: 2400, protein: 180, carbs: 250, fats: 80 },
