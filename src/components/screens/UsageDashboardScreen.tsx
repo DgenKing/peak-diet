@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { BackButton } from '../ui/BackButton';
@@ -26,23 +26,30 @@ interface UsageDashboardScreenProps {
 export function UsageDashboardScreen({ onBack }: UsageDashboardScreenProps) {
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch('/api/usage');
-        if (!res.ok) throw new Error('Failed to fetch usage stats');
-        const data = await res.json();
-        setStats(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
+  const fetchStats = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    
+    setError(null);
+    try {
+      const res = await fetch('/api/usage');
+      if (!res.ok) throw new Error('Failed to fetch usage stats');
+      const data = await res.json();
+      setStats(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
@@ -52,15 +59,28 @@ export function UsageDashboardScreen({ onBack }: UsageDashboardScreenProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30 flex items-center gap-4">
-        <BackButton onClick={onBack} />
-        <h1 className="text-xl font-bold">Usage Dashboard</h1>
+      <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <BackButton onClick={onBack} />
+          <h1 className="text-xl font-bold">Usage Dashboard</h1>
+        </div>
+        <button 
+          onClick={() => fetchStats(true)}
+          disabled={refreshing}
+          className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${refreshing ? 'animate-spin opacity-50' : ''}`}
+          title="Refresh stats"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
       </div>
 
       <div className="flex-1 overflow-auto p-4 max-w-md mx-auto w-full space-y-6">
         {error ? (
           <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-2xl text-center">
             {error}
+            <Button variant="secondary" size="sm" className="mt-2 block mx-auto" onClick={() => fetchStats()}>Try Again</Button>
           </div>
         ) : stats ? (
           <>
@@ -119,7 +139,7 @@ export function UsageDashboardScreen({ onBack }: UsageDashboardScreenProps) {
                     <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-primary" 
-                        style={{ width: `${Math.min(100, (parseInt(day.tokens) / 5000) * 100)}%` }}
+                        style={{ width: `${Math.min(100, (parseInt(day.tokens) / 10000) * 100)}%` }}
                       />
                     </div>
                     <div className="text-[10px] font-bold text-gray-500 w-12 text-right">
@@ -132,7 +152,7 @@ export function UsageDashboardScreen({ onBack }: UsageDashboardScreenProps) {
               </div>
             </div>
 
-            <div className="pt-4">
+            <div className="pt-4 pb-8">
               <Button variant="outline" className="w-full" onClick={onBack}>
                 Back to Settings
               </Button>
