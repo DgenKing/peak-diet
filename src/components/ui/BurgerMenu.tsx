@@ -7,11 +7,24 @@ interface BurgerMenuProps {
   onHowToUse: () => void;
   onFeedback: () => void;
   onClearWeek: () => void;
+  // Optional guard - if provided, calls this instead of navigating directly
+  // The guard receives the navigation function to call if allowed
+  onBeforeNavigate?: (navigateFn: () => void) => void;
 }
 
-export function BurgerMenu({ theme, onToggleTheme, onYourWeek, onHowToUse, onFeedback, onClearWeek }: BurgerMenuProps) {
+export function BurgerMenu({ theme, onToggleTheme, onYourWeek, onHowToUse, onFeedback, onClearWeek, onBeforeNavigate }: BurgerMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Helper to handle navigation with optional guard
+  const handleNavigate = (navigateFn: () => void) => {
+    setIsOpen(false);
+    if (onBeforeNavigate) {
+      onBeforeNavigate(navigateFn);
+    } else {
+      navigateFn();
+    }
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -101,10 +114,7 @@ export function BurgerMenu({ theme, onToggleTheme, onYourWeek, onHowToUse, onFee
 
           {/* Your Week */}
           <button
-            onClick={() => {
-              onYourWeek();
-              setIsOpen(false);
-            }}
+            onClick={() => handleNavigate(onYourWeek)}
             className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <span className="text-lg">📅</span>
@@ -115,10 +125,7 @@ export function BurgerMenu({ theme, onToggleTheme, onYourWeek, onHowToUse, onFee
 
           {/* How to Use */}
           <button
-            onClick={() => {
-              onHowToUse();
-              setIsOpen(false);
-            }}
+            onClick={() => handleNavigate(onHowToUse)}
             className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <span className="text-lg">❓</span>
@@ -129,10 +136,7 @@ export function BurgerMenu({ theme, onToggleTheme, onYourWeek, onHowToUse, onFee
 
           {/* Feedback */}
           <button
-            onClick={() => {
-              onFeedback();
-              setIsOpen(false);
-            }}
+            onClick={() => handleNavigate(onFeedback)}
             className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <span className="text-lg">💬</span>

@@ -16,7 +16,16 @@ const client = new OpenAI({
 const SYSTEM_PROMPT = `You are an expert nutritionist. You must output STRICT JSON only.
 Your goal is to generate a personalized diet plan based on the user's profile.
 
-CRITICAL RULE: The sum of calories from all meals MUST match the "dailyTargets.calories" (within 5% margin). Do not output a target of 2500kcal if the meals only add up to 2000kcal. Adjust portions to match the target.
+CRITICAL MATH RULE - YOU MUST VERIFY THIS BEFORE RESPONDING:
+1. Add up ALL meal calories - must equal dailyTargets.calories (±5%)
+2. Add up ALL meal protein - must equal dailyTargets.protein (±5%)
+3. Add up ALL meal carbs - must equal dailyTargets.carbs (±5%)
+4. Add up ALL meal fats - must equal dailyTargets.fats (±5%)
+
+EXAMPLE: If target is 2000 kcal and 180g protein, meals must add to ~2000 kcal and ~180g protein.
+If your meals only add to 1500 kcal, INCREASE PORTIONS until they reach 2000 kcal.
+
+DO NOT output a plan where meals don't add up. Verify the math mentally before responding.
 
 CRITICAL RULE: Do NOT include a "weekly grocery list" in the tips. This is a single-day plan. Only list ingredients needed for THIS day if asked, otherwise focus on preparation tips.
 
@@ -78,6 +87,51 @@ const MOCK_PLAN: DietPlan = {
   tips: ["Drink 3L of water", "Prep meals on Sunday"]
 };
 
+// Recalculate accurate totals from item macros (AI is bad at math)
+function recalculatePlanTotals(plan: DietPlan): DietPlan {
+  const recalculatedMeals = plan.meals.map(meal => {
+    // Sum up item macros to get accurate meal totals
+    const totalMacros = meal.items.reduce((acc, item) => {
+      if (item.macros) {
+        return {
+          calories: acc.calories + (item.macros.calories || 0),
+          protein: acc.protein + (item.macros.protein || 0),
+          carbs: acc.carbs + (item.macros.carbs || 0),
+          fats: acc.fats + (item.macros.fats || 0),
+        };
+      }
+      return acc;
+    }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
+
+    // Only update if we have item macros to sum
+    const hasItemMacros = meal.items.some(item => item.macros);
+    return {
+      ...meal,
+      totalMacros: hasItemMacros ? totalMacros : meal.totalMacros,
+    };
+  });
+
+  // Sum all meal totals to get accurate daily totals
+  const actualDailyTotals = recalculatedMeals.reduce((acc, meal) => {
+    if (meal.totalMacros) {
+      return {
+        calories: acc.calories + meal.totalMacros.calories,
+        protein: acc.protein + meal.totalMacros.protein,
+        carbs: acc.carbs + meal.totalMacros.carbs,
+        fats: acc.fats + meal.totalMacros.fats,
+      };
+    }
+    return acc;
+  }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
+
+  return {
+    ...plan,
+    meals: recalculatedMeals,
+    // Replace daily targets with actual totals (what they'll really eat)
+    dailyTargets: actualDailyTotals,
+  };
+}
+
 export async function generateDietPlan(data: SimpleFormData): Promise<DietPlan> {
   if (!API_KEY) {
     console.warn("No API Key found, returning mock data.");
@@ -101,7 +155,8 @@ export async function generateDietPlan(data: SimpleFormData): Promise<DietPlan> 
     if (!content) throw new Error("No content returned");
 
     const json = JSON.parse(content);
-    return DietPlanSchema.parse(json);
+    const plan = DietPlanSchema.parse(json);
+    return recalculatePlanTotals(plan);
   } catch (error) {
     console.error("AI Generation Error:", error);
     throw error;
@@ -137,7 +192,8 @@ export async function updateDietPlan(currentPlan: DietPlan, instruction: string)
     if (!content) throw new Error("No content returned");
 
     const json = JSON.parse(content);
-    return DietPlanSchema.parse(json);
+    const plan = DietPlanSchema.parse(json);
+    return recalculatePlanTotals(plan);
   } catch (error) {
     console.error("AI Update Error:", error);
     throw error;
@@ -167,7 +223,8 @@ export async function generateAdvancedDietPlan(data: AdvancedFormData): Promise<
     if (!content) throw new Error("No content returned");
 
     const json = JSON.parse(content);
-    return DietPlanSchema.parse(json);
+    const plan = DietPlanSchema.parse(json);
+    return recalculatePlanTotals(plan);
   } catch (error) {
     console.error("AI Generation Error:", error);
     throw error;
@@ -193,7 +250,7 @@ CRITICAL RULES:
 5. If the swap makes balancing impossible (e.g., only one item in meal), do your best but prioritize the user's requested change
 6. Return valid JSON matching the meal schema exactly
 7. Each item should have realistic macros
-8. IMPORTANT: Update the "instructions" field to make sense with the NEW meal items. Don't keep old instructions that reference removed items.
+8. IMPORTANT: The "instructions" field should be a SHORT, practical cooking tip for the MAIN protein or central item only (e.g., "Grill chicken at 180°C for 6 mins per side" or "Scramble eggs on medium heat with butter"). Do NOT try to explain how to combine all items or reference side items like oatmeal, spinach, etc. Keep it to 1 sentence max.
 
 Meal JSON Schema:
 {
@@ -240,7 +297,25 @@ export async function updateMeal(
     if (!content) throw new Error("No content returned");
 
     const json = JSON.parse(content);
-    return MealSchema.parse(json);
+    const updatedMeal = MealSchema.parse(json);
+
+    // Recalculate meal totals from item macros
+    const hasItemMacros = updatedMeal.items.some(item => item.macros);
+    if (hasItemMacros) {
+      const totalMacros = updatedMeal.items.reduce((acc, item) => {
+        if (item.macros) {
+          return {
+            calories: acc.calories + (item.macros.calories || 0),
+            protein: acc.protein + (item.macros.protein || 0),
+            carbs: acc.carbs + (item.macros.carbs || 0),
+            fats: acc.fats + (item.macros.fats || 0),
+          };
+        }
+        return acc;
+      }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
+      return { ...updatedMeal, totalMacros };
+    }
+    return updatedMeal;
   } catch (error) {
     console.error("AI Meal Update Error:", error);
     throw error;
