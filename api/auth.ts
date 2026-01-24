@@ -5,6 +5,19 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-this';
 
+// Helper to parse cookies from headers
+function parseCookies(req: VercelRequest) {
+  const list: Record<string, string> = {};
+  const rc = req.headers.cookie;
+
+  rc && rc.split(';').forEach(cookie => {
+    const parts = cookie.split('=');
+    list[parts.shift()!.trim()] = decodeURI(parts.join('='));
+  });
+
+  return list;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Use action from body for POST, from query for GET
   const action = req.method === 'POST' ? req.body.action : req.query.action;
@@ -14,6 +27,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleLogin(req, res);
     } else if (action === 'register') {
       return handleRegister(req, res);
+    } else if (action === 'logout') {
+      return handleLogout(req, res);
     }
   } else if (req.method === 'GET') {
     if (action === 'me') {
@@ -65,6 +80,7 @@ async function handleRegister(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Check if email already exists
     const emailCheck = await db.query('SELECT id FROM users WHERE email = $1', [email]);
     if (emailCheck.rows.length > 0) {
       return res.status(400).json({ error: 'Email already registered' });
@@ -107,8 +123,14 @@ async function handleRegister(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+async function handleLogout(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Set-Cookie', 'token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+  return res.status(200).json({ message: 'Logged out' });
+}
+
 async function handleMe(req: VercelRequest, res: VercelResponse) {
-  const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+  const cookies = parseCookies(req);
+  const token = cookies.token || req.headers.authorization?.split(' ')[1];
 
   if (!token) {
     return res.status(401).json({ error: 'Not authenticated' });
