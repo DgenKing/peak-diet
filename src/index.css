@@ -90,3 +90,24 @@ button:focus-visible {
     opacity: 0.8;
   }
 }
+
+/* Green flash animation for Copy button */
+@keyframes flash-green {
+  0%, 100% {
+    background-color: transparent;
+    border-color: currentColor;
+  }
+  16.67%, 50%, 83.33% {
+    background-color: #10B981;
+    border-color: #10B981;
+    color: white;
+  }
+  33.33%, 66.67% {
+    background-color: transparent;
+    border-color: currentColor;
+  }
+}
+
+.animate-flash-green {
+  animation: flash-green 1.5s ease-in-out;
+}

@@ -15,11 +15,14 @@ interface DietDashboardScreenProps {
   onSave?: (plan: DietPlan) => void;
   onCopyToDays?: (days: DayOfWeek[]) => void;
   occupiedDays?: DayOfWeek[];
+  // For burger menu navigation guard
+  pendingNavigation?: (() => void) | null;
+  onClearPendingNavigation?: () => void;
 }
 
 const daysList: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack, onSave, onCopyToDays, occupiedDays = [] }: DietDashboardScreenProps) {
+export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack, onSave, onCopyToDays, occupiedDays = [], pendingNavigation, onClearPendingNavigation }: DietDashboardScreenProps) {
   const [plan, setPlan] = useState<DietPlan | null>(initialPlan || null);
   const [loading, setLoading] = useState(!initialPlan && !!generatePlan);
   const [updating, setUpdating] = useState(false);
@@ -29,6 +32,10 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
   const [editingMeal, setEditingMeal] = useState<{ meal: Meal; index: number } | null>(null);
 
+  // Track if plan has been saved to a day (already saved if viewing existing day)
+  const [hasSaved, setHasSaved] = useState(!!dayName);
+  const [flashCopyButton, setFlashCopyButton] = useState(false);
+
   // Modal State
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
@@ -36,6 +43,8 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
     message: string;
     onConfirm: () => void;
     variant?: 'danger' | 'primary';
+    confirmText?: string;
+    cancelText?: string;
   }>({
     isOpen: false,
     title: '',
@@ -96,6 +105,55 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
     );
   };
 
+  // Handle back button - warn if plan not saved
+  const handleBack = () => {
+    if (!hasSaved && plan) {
+      setModalConfig({
+        isOpen: true,
+        title: 'Unsaved Plan',
+        message: 'You haven\'t saved this plan to any day yet. Use "Copy to..." to save it.',
+        variant: 'danger',
+        confirmText: 'Leave Anyway',
+        cancelText: 'Stay & Save',
+        onConfirm: () => {
+          // User chose to leave anyway
+          onBack();
+        },
+      });
+    } else {
+      onBack();
+    }
+  };
+
+  // Flash the copy button when modal closes without saving
+  const triggerCopyFlash = () => {
+    setFlashCopyButton(true);
+    setTimeout(() => setFlashCopyButton(false), 1500); // 3 flashes at 500ms each
+  };
+
+  // Handle burger menu navigation attempts
+  useEffect(() => {
+    if (pendingNavigation && !hasSaved && plan) {
+      // Show the unsaved modal
+      setModalConfig({
+        isOpen: true,
+        title: 'Unsaved Plan',
+        message: 'You haven\'t saved this plan to any day yet. Use "Copy to..." to save it.',
+        variant: 'danger',
+        confirmText: 'Leave Anyway',
+        cancelText: 'Stay & Save',
+        onConfirm: () => {
+          pendingNavigation();
+          onClearPendingNavigation?.();
+        },
+      });
+    } else if (pendingNavigation && (hasSaved || !plan)) {
+      // Already saved or no plan, just navigate
+      pendingNavigation();
+      onClearPendingNavigation?.();
+    }
+  }, [pendingNavigation]);
+
   const handleCopySelected = () => {
     if (selectedDays.length === 0 || !onCopyToDays || !plan) return;
 
@@ -121,10 +179,14 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
         title: 'Overwrite Plans?',
         message: `Diet plans already exist for ${occupiedSelected.join(', ')}. Are you sure you want to replace them?`,
         variant: 'danger',
-        onConfirm: performCopy,
+        onConfirm: () => {
+          performCopy();
+          setHasSaved(true);
+        },
       });
     } else {
       performCopy();
+      setHasSaved(true);
     }
   };
 
@@ -162,11 +224,20 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
        {/* Modal Container */}
        <Modal
           isOpen={modalConfig.isOpen}
-          onClose={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
+          onClose={() => {
+            // If closing the unsaved plan modal without confirming, flash the copy button
+            if (modalConfig.title === 'Unsaved Plan') {
+              triggerCopyFlash();
+              onClearPendingNavigation?.(); // Clear any pending burger menu navigation
+            }
+            setModalConfig(prev => ({ ...prev, isOpen: false }));
+          }}
           onConfirm={modalConfig.onConfirm}
           title={modalConfig.title}
           message={modalConfig.message}
           variant={modalConfig.variant}
+          confirmText={modalConfig.confirmText}
+          cancelText={modalConfig.cancelText}
        />
 
        {/* Meal Editor Modal */}
@@ -191,7 +262,7 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
        {/* Dashboard Header */}
        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <button onClick={onBack} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+            <button onClick={handleBack} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
@@ -204,7 +275,12 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
             </div>
           </div>
           <div className="relative mr-[40px]">
-            <Button variant="outline" size="sm" onClick={() => setShowCopyMenu(!showCopyMenu)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCopyMenu(!showCopyMenu)}
+              className={flashCopyButton ? 'animate-flash-green' : ''}
+            >
               Copy to...
             </Button>
             
@@ -288,9 +364,16 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
                     {meal.time && <span className="text-xs text-gray-500 font-medium">{meal.time}</span>}
                   </div>
                   {meal.totalMacros && (
-                     <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                       {meal.totalMacros.calories} kcal
-                     </span>
+                     <div className="text-right">
+                       <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                         {meal.totalMacros.calories} kcal
+                       </span>
+                       <div className="flex gap-2 mt-1 text-[10px] text-gray-500">
+                         <span>{meal.totalMacros.protein}g protein</span>
+                         <span>{meal.totalMacros.carbs}g carbs</span>
+                         <span>{meal.totalMacros.fats}g fat</span>
+                       </div>
+                     </div>
                   )}
                 </div>
 

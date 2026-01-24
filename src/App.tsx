@@ -126,6 +126,9 @@ function App() {
   const [activeDay, setActiveDay] = useState<DayOfWeek | null>(null);
   const [activePlan, setActivePlan] = useState<DietPlan | null>(null);
 
+  // For burger menu navigation guard on unsaved plans
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+
   const occupiedDays = (Object.keys(weeklySchedule) as DayOfWeek[]).filter(d => weeklySchedule[d] !== null);
 
   // Autofill stats if available when starting
@@ -210,6 +213,25 @@ function App() {
             clearWeek();
           }
         }}
+      />
+    </div>
+  );
+
+  // Guarded menu for dashboard - checks with dashboard before navigating
+  const guardedMenuElement = (
+    <div className="fixed top-[19px] right-[14px] z-50">
+      <BurgerMenu
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onYourWeek={() => setScreen('planner')}
+        onHowToUse={() => { setPreviousScreen(screen); setScreen('getting-started'); }}
+        onFeedback={() => { setPreviousScreen(screen); setScreen('feedback'); }}
+        onClearWeek={() => {
+          if (confirm('Clear all meal plans for the week?')) {
+            clearWeek();
+          }
+        }}
+        onBeforeNavigate={(navigateFn) => setPendingNavigation(() => navigateFn)}
       />
     </div>
   );
@@ -340,6 +362,8 @@ function App() {
               onSave={handlePlanGenerated}
               onCopyToDays={(days) => activePlan && copyToDays(activePlan, days)}
               occupiedDays={occupiedDays}
+              pendingNavigation={pendingNavigation}
+              onClearPendingNavigation={() => setPendingNavigation(null)}
             />
           );
       }
@@ -350,7 +374,7 @@ function App() {
 
     return (
       <>
-        {showMenu && menuElement}
+        {showMenu && guardedMenuElement}
         {content}
       </>
     );
@@ -451,6 +475,8 @@ function App() {
               onSave={handlePlanGenerated}
               onCopyToDays={(days) => activePlan && copyToDays(activePlan, days)}
               occupiedDays={occupiedDays}
+              pendingNavigation={pendingNavigation}
+              onClearPendingNavigation={() => setPendingNavigation(null)}
             />
           );
       }
@@ -461,7 +487,7 @@ function App() {
 
     return (
       <>
-        {showMenu && menuElement}
+        {showMenu && guardedMenuElement}
         {content}
       </>
     );
@@ -471,7 +497,7 @@ function App() {
   if (screen === 'dashboard' && activePlan) {
     return (
       <>
-        {menuElement}
+        {guardedMenuElement}
         <DietDashboardScreen
           initialPlan={activePlan}
           dayName={activeDay || undefined}
@@ -479,6 +505,8 @@ function App() {
           onSave={handleUpdatePlan}
           onCopyToDays={(days) => activePlan && copyToDays(activePlan, days)}
           occupiedDays={occupiedDays}
+          pendingNavigation={pendingNavigation}
+          onClearPendingNavigation={() => setPendingNavigation(null)}
         />
       </>
     );

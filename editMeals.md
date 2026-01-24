@@ -223,14 +223,12 @@ const [editingMeal, setEditingMeal] = useState<{meal: Meal, index: number} | nul
 
 ## Known Issues / Next Steps
 
-### Tips still reference weird combos
-When the original meal has a strange combination (e.g., eggs + milk mix + golden syrup), the tip tries to make sense of it but fails. The AI generates tips like "serve eggs with golden syrup" which is nonsensical.
+### ~~Tips still reference weird combos~~ ✅ FIXED
+~~When the original meal has a strange combination (e.g., eggs + milk mix + golden syrup), the tip tries to make sense of it but fails.~~
 
-**Potential fixes:**
-1. Tell AI to only generate tips for items that make culinary sense together
-2. Tell AI to focus tip on the MAIN protein/item only, ignore fillers
-3. Remove tips entirely for edited meals
-4. Let user edit/delete tips manually
+**Solution implemented:** Updated AI prompt to focus tips on the MAIN protein/item only with a short, practical cooking instruction (1 sentence max). Tips no longer try to explain how to combine all items.
+
+Example: "Pan-fry chicken sausages over medium heat for 8-10 minutes until browned and cooked through."
 
 ### Macro balancing limitations
 When swapping a small item for a much larger one (e.g., 50g chicken → 200g chicken), the AI reduces other items but can't fully compensate if there's not enough to reduce.
