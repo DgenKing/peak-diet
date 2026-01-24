@@ -158,7 +158,7 @@ async function handleUpdate(req: VercelRequest, res: VercelResponse) {
     const plan = JSON.parse(content);
     return res.status(200).json(plan);
   } catch (error) {
-    console.error('AI Update Error:', error);
+    console.error('AI Update Error:', error); console.log('Request body:', req.body);
     return res.status(500).json({ error: 'AI update failed' });
   }
 }
