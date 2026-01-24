@@ -101,17 +101,62 @@ Automatically generates a consolidated grocery list from your weekly meal plans.
 
 ### 5. Data Persistence
 
-All data is saved to localStorage and persists across sessions.
+Data is saved locally and synced to the cloud for registered users.
 
-**What's Saved:**
+**Local Storage (All Users):**
 - Weekly schedule (all 7 days' plans)
 - User stats (auto-fills next time you create a plan)
 - Shopping list cache with change detection hash
-- Saved plan library (for reusing plans)
+- Device ID for anonymous user tracking
+
+**Cloud Storage (Registered Users):**
+- Saved plans library (up to 3 slots)
+- Weekly schedules (multiple saved weeks)
+- Token usage history
+- Cross-device sync
 
 ---
 
-### 6. User Experience Features
+### 6. User Accounts
+
+#### Anonymous Users (Default)
+- Auto-generated fitness username on first visit (e.g., "IronKing_42", "BeastMode_77")
+- 1,000,000+ unique username combinations
+- Tracked by device ID
+- Plans stored locally
+- Can upgrade to registered anytime
+
+#### Registered Users
+- Email + password to create account
+- Keep your username or choose a new one
+- Plans sync across devices
+- Token usage history preserved
+- Login from any device
+
+---
+
+### 7. Navigation
+
+#### Burger Menu
+- Accessible from top-left on all screens
+- Quick links: Weekly Planner, Your Week Summary, Feedback
+- Consistent navigation across the app
+
+#### Your Week Summary
+- Overview of all 7 days at a glance
+- Shows which days have plans
+- Quick macro totals for the week
+
+---
+
+### 8. Feedback Form
+- Built-in feedback submission via Formspree
+- Accessible from burger menu
+- Direct line to developers
+
+---
+
+### 9. User Experience Features
 
 #### Loading Experience
 - **Animated Logo Spinner**: Pulsing logo animation during AI generation
@@ -136,7 +181,7 @@ All data is saved to localStorage and persists across sessions.
 
 ---
 
-### 7. Unit Support
+### 10. Unit Support
 
 - **Height**: cm or ft/inches
 - **Weight**: kg or lbs
@@ -197,7 +242,10 @@ interface DietPlan {
 | Build | Vite |
 | AI | DeepSeek API |
 | Validation | Zod |
-| Storage | localStorage |
+| Local Storage | localStorage |
+| Database | Vercel Postgres (Neon) |
+| Auth | JWT + bcrypt |
+| API | Vercel Serverless Functions |
 | Hosting | Vercel |
 
 ---
@@ -238,8 +286,42 @@ One-click presets that auto-fill common configurations:
 
 ---
 
+## API Endpoints
+
+### Authentication
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/register` | POST | Create account (upgrade from anonymous) |
+| `/api/auth/login` | POST | Login with email/password |
+| `/api/auth/me` | GET | Get current user profile |
+
+### Users
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/users/init` | POST | Initialize anonymous user with device ID |
+
+### Plans
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/plans` | GET | Get all saved plans |
+| `/api/plans` | POST | Save a new plan |
+
+### Schedules
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/schedules` | GET | Get all weekly schedules |
+| `/api/schedules` | POST | Create new schedule |
+| `/api/schedules/:id` | GET | Get single schedule |
+| `/api/schedules/:id` | PATCH | Update schedule |
+| `/api/schedules/:id` | DELETE | Delete schedule |
+
+---
+
 ## Future Features (Planned)
 
+- [ ] Saved Plans UI (3 save slots for free users)
+- [ ] User profile screen (login/register/change username)
+- [ ] Token usage tracking and limits
 - [ ] Conversational chat for questions without modifying plan
 - [ ] Meal reminders/notifications
 - [ ] Meal check-in tracking
@@ -248,3 +330,4 @@ One-click presets that auto-fill common configurations:
 - [ ] Recipe details and cooking instructions
 - [ ] Nutritionist sharing
 - [ ] Voice input for modifications
+- [ ] Premium tier with more save slots

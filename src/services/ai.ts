@@ -179,6 +179,74 @@ export async function processChatRequest(_userMsg: string, _schedule: WeeklySche
   return { response: "Chat feature coming soon!", action: 'reply' };
 }
 
+// Update a single meal with focused AI
+import { MealSchema } from '../types/diet';
+import type { Meal, Macro } from '../types/diet';
+
+const MEAL_UPDATE_PROMPT = `You are an expert nutritionist. Update a single meal based on the user's instruction.
+
+CRITICAL RULES:
+1. Make the change the user asks for
+2. Keep the meal name and time unchanged unless specifically asked
+3. IMPORTANT: Try to keep the meal's total macros (calories, protein, carbs, fats) as close to the original as possible by adjusting portion sizes of OTHER items in the meal
+4. If swapping one protein for another with more protein, reduce portions of other protein-containing items to balance
+5. If the swap makes balancing impossible (e.g., only one item in meal), do your best but prioritize the user's requested change
+6. Return valid JSON matching the meal schema exactly
+7. Each item should have realistic macros
+8. IMPORTANT: Update the "instructions" field to make sense with the NEW meal items. Don't keep old instructions that reference removed items.
+
+Meal JSON Schema:
+{
+  "name": "string",
+  "time": "string (optional)",
+  "items": [{ "name": "string", "amount": "string", "macros": { "protein": number, "carbs": number, "fats": number, "calories": number } }],
+  "totalMacros": { "protein": number, "carbs": number, "fats": number, "calories": number },
+  "instructions": "string (optional)"
+}
+`;
+
+export async function updateMeal(
+  meal: Meal,
+  instruction: string,
+  dailyTargets: Macro
+): Promise<Meal> {
+  if (!API_KEY) {
+    console.warn("No API Key found, returning mock update.");
+    await new Promise(r => setTimeout(r, 1000));
+    return {
+      ...meal,
+      items: meal.items.map(item => ({
+        ...item,
+        name: instruction.toLowerCase().includes('bacon') && item.name.toLowerCase().includes('egg')
+          ? 'Bacon' : item.name
+      }))
+    };
+  }
+
+  try {
+    const completion = await client.chat.completions.create({
+      messages: [
+        { role: "system", content: MEAL_UPDATE_PROMPT },
+        {
+          role: "user",
+          content: `Current meal (${meal.name}):\n${JSON.stringify(meal, null, 2)}\n\nDaily targets for context: ${dailyTargets.calories}kcal, ${dailyTargets.protein}g protein, ${dailyTargets.carbs}g carbs, ${dailyTargets.fats}g fats\n\nUser instruction: "${instruction}"\n\nReturn the updated meal as JSON only.`
+        }
+      ],
+      model: "deepseek-chat",
+      response_format: { type: "json_object" },
+    });
+
+    const content = completion.choices[0].message.content;
+    if (!content) throw new Error("No content returned");
+
+    const json = JSON.parse(content);
+    return MealSchema.parse(json);
+  } catch (error) {
+    console.error("AI Meal Update Error:", error);
+    throw error;
+  }
+}
+
 export async function generateShoppingList(ingredients: string[]): Promise<string> {
   if (!API_KEY) {
     await new Promise(r => setTimeout(r, 1500));
