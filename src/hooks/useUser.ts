@@ -48,7 +48,7 @@ export function useUser() {
         }
 
         // Register/fetch user from database
-        const response = await fetch('/api/users/init', {
+        const response = await fetch('/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ device_id: deviceId }),

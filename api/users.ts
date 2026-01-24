@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { db } from '../lib/db.js';
-import { generateFitnessUsername } from '../lib/utils.js';
+import { db } from './lib/db.js';
+import { generateFitnessUsername } from './lib/utils.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {

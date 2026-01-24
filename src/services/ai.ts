@@ -102,10 +102,10 @@ export async function generateDietPlan(data: SimpleFormData, userId?: string): P
 
   try {
     // Call server-side API for token tracking
-    const response = await fetch('/api/ai/generate', {
+    const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, prompt: userPrompt }),
+      body: JSON.stringify({ userId, prompt: userPrompt, action: 'generate' }),
     });
 
     if (!response.ok) {
@@ -126,10 +126,10 @@ export async function generateDietPlan(data: SimpleFormData, userId?: string): P
 
 export async function updateDietPlan(currentPlan: DietPlan, instruction: string, userId?: string): Promise<DietPlan> {
   try {
-    const response = await fetch('/api/ai/update', {
+    const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, currentPlan, instruction }),
+      body: JSON.stringify({ userId, currentPlan, instruction, action: 'update' }),
     });
 
     if (!response.ok) {
@@ -162,10 +162,10 @@ export async function generateAdvancedDietPlan(data: AdvancedFormData, userId?: 
   const userPrompt = generateAdvancedPrompt(data, 'detailed');
 
   try {
-    const response = await fetch('/api/ai/generate', {
+    const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, prompt: userPrompt }),
+      body: JSON.stringify({ userId, prompt: userPrompt, action: 'generate' }),
     });
 
     if (!response.ok) {
