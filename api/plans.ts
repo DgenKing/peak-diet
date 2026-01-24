@@ -1,6 +1,6 @@
 import { VercelResponse } from '@vercel/node';
-import { db } from '../lib/db.js';
-import { authenticate, AuthRequest } from '../lib/auth.js';
+import { db } from './lib/db.js';
+import { authenticate, AuthRequest } from './lib/auth.js';
 
 export default async function handler(req: AuthRequest, res: VercelResponse) {
   const auth = await authenticate(req, res);

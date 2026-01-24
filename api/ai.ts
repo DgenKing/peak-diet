@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
-import { recordTokenUsage } from '../lib/token.js';
+import { recordTokenUsage } from './lib/token.js';
 
 // Hardcoded for local dev - vercel dev loads wrong env var
 const API_KEY = "sk-ed5a720028c2406180217f19e1ca47e6";
@@ -26,7 +26,7 @@ DO NOT output a plan where meals don't add up. Verify the math mentally before r
 
 CRITICAL RULE: Do NOT include a "weekly grocery list" in the tips. This is a single-day plan. Only list ingredients needed for THIS day if asked, otherwise focus on preparation tips.
 
-CRITICAL RULE for "summary": Start the summary with the main foods/ingredients for the day (e.g., "Chicken, rice, broccoli, eggs, oats - ..." then continue with the plan strategy). This helps users quickly see what foods they'll be eating.
+CRITICAL RULE for "summary": Start the summary with the main foods/ingredients for the day (e.g., "Chicken, rice, broccoli, eggs, oats - ..." then continue with the plan strategy).
 
 Follow the following JSON schema strictly:
 {
@@ -50,6 +50,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const { action } = req.body;
+
+  if (action === 'generate') {
+    return handleGenerate(req, res);
+  } else if (action === 'update') {
+    return handleUpdate(req, res);
+  }
+
+  return res.status(400).json({ error: 'Valid action (generate/update) is required in body' });
+}
+
+async function handleGenerate(req: VercelRequest, res: VercelResponse) {
   const { userId, prompt } = req.body;
 
   if (!prompt) {
@@ -69,7 +81,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const content = completion.choices[0].message.content;
     if (!content) throw new Error("No content returned from AI");
 
-    // Track token usage if userId provided
     if (userId && completion.usage) {
       await recordTokenUsage({
         userId,
@@ -82,9 +93,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const plan = JSON.parse(content);
     return res.status(200).json(plan);
-
   } catch (error) {
     console.error('AI Generation Error:', error);
     return res.status(500).json({ error: 'AI generation failed' });
+  }
+}
+
+async function handleUpdate(req: VercelRequest, res: VercelResponse) {
+  const { userId, currentPlan, instruction } = req.body;
+
+  if (!currentPlan || !instruction) {
+    return res.status(400).json({ error: 'currentPlan and instruction are required' });
+  }
+
+  try {
+    const completion = await client.chat.completions.create({
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: `Current Plan JSON:\n${JSON.stringify(currentPlan)}\n\nUser Instruction: ${instruction}\n\nUpdate the plan based on the instruction and return the full new JSON.` }
+      ],
+      model: "deepseek-chat",
+      response_format: { type: "json_object" },
+    });
+
+    const content = completion.choices[0].message.content;
+    if (!content) throw new Error("No content returned from AI");
+
+    if (userId && completion.usage) {
+      await recordTokenUsage({
+        userId,
+        tokensInput: completion.usage.prompt_tokens,
+        tokensOutput: completion.usage.completion_tokens,
+        model: "deepseek-chat",
+        requestType: 'update'
+      });
+    }
+
+    const plan = JSON.parse(content);
+    return res.status(200).json(plan);
+  } catch (error) {
+    console.error('AI Update Error:', error);
+    return res.status(500).json({ error: 'AI update failed' });
   }
 }
