@@ -351,6 +351,7 @@ WHERE user_id = $1 AND is_active = true;
 - [x] **Routing**: Configured `vercel.json` for API rewrites.
 
 - [x] **Weekly Schedules API**: `GET/POST/PATCH/DELETE /api/schedules` for managing 7-day layouts.
+- [x] **Deployed to Production**: All API endpoints live on Vercel with Neon Postgres.
 
 ### Pending ⏳
 - [ ] **Token Usage Tracking**: Implementing middleware to track AI costs.
@@ -358,4 +359,13 @@ WHERE user_id = $1 AND is_active = true;
 - [ ] **User Profile UI**: Screens for login, register, and changing usernames.
 
 ## Future Considerations
-...
+
+### Saved Plans with Slots
+- Limit saves to 3 slots (free users), more for premium
+- Add `slot_number` column to `saved_plans` table:
+  ```sql
+  ALTER TABLE saved_plans ADD COLUMN slot_number INTEGER DEFAULT 1;
+  ALTER TABLE saved_plans ADD CONSTRAINT unique_user_slot UNIQUE (user_id, slot_number);
+  ```
+- UI: Show 3 save slots, user picks which to overwrite
+- Call them "Saved Plans" or "My Diets" in UI

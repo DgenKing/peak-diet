@@ -29,6 +29,9 @@ export const DietPlanSchema = z.object({
 });
 
 export type DietPlan = z.infer<typeof DietPlanSchema>;
+export type Meal = z.infer<typeof MealSchema>;
+export type Macro = z.infer<typeof MacroSchema>;
+export type MealItem = z.infer<typeof MealItemSchema>;
 
 export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
 

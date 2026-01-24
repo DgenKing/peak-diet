@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import type { DietPlan, DayOfWeek } from '../../types/diet';
+import type { DietPlan, DayOfWeek, Meal } from '../../types/diet';
 import { updateDietPlan } from '../../services/ai';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { MealEditorModal } from '../MealEditorModal';
 
 interface DietDashboardScreenProps {
   generatePlan?: () => Promise<DietPlan>;
@@ -26,6 +27,7 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
   const [error, setError] = useState<string | null>(null);
   const [showCopyMenu, setShowCopyMenu] = useState(false);
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
+  const [editingMeal, setEditingMeal] = useState<{ meal: Meal; index: number } | null>(null);
 
   // Modal State
   const [modalConfig, setModalConfig] = useState<{
@@ -167,6 +169,25 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
           variant={modalConfig.variant}
        />
 
+       {/* Meal Editor Modal */}
+       {editingMeal && (
+         <MealEditorModal
+           isOpen={!!editingMeal}
+           onClose={() => setEditingMeal(null)}
+           meal={editingMeal.meal}
+           mealIndex={editingMeal.index}
+           dailyTargets={plan.dailyTargets}
+           onMealUpdated={(updatedMeal, index) => {
+             const newMeals = [...plan.meals];
+             newMeals[index] = updatedMeal;
+             const newPlan = { ...plan, meals: newMeals };
+             setPlan(newPlan);
+             onSave?.(newPlan);
+             setEditingMeal(null);
+           }}
+         />
+       )}
+
        {/* Dashboard Header */}
        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -251,10 +272,19 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
           <div className="space-y-4">
             <h3 className="font-bold text-lg">Daily Schedule</h3>
             {plan.meals.map((meal, idx) => (
-              <div key={idx} className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+              <div
+                key={idx}
+                onClick={() => setEditingMeal({ meal, index: idx })}
+                className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 cursor-pointer hover:ring-2 hover:ring-primary/50 hover:border-primary/50 transition-all active:scale-[0.99]"
+              >
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h4 className="font-bold text-primary text-lg">{meal.name}</h4>
+                    <h4 className="font-bold text-primary text-lg flex items-center gap-2">
+                      {meal.name}
+                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </h4>
                     {meal.time && <span className="text-xs text-gray-500 font-medium">{meal.time}</span>}
                   </div>
                   {meal.totalMacros && (
@@ -263,7 +293,7 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
                      </span>
                   )}
                 </div>
-                
+
                 <ul className="space-y-2 mb-3">
                   {meal.items.map((item, i) => (
                     <li key={i} className="flex justify-between text-sm border-b border-gray-50 dark:border-gray-800 last:border-0 pb-1 last:pb-0">
@@ -272,7 +302,7 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
                     </li>
                   ))}
                 </ul>
-                
+
                 {meal.instructions && (
                   <p className="text-xs text-gray-500 italic border-t border-gray-100 dark:border-gray-800 pt-2 mt-2">
                     Tip: {meal.instructions}
