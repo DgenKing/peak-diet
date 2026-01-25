@@ -235,33 +235,33 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
                   key={day}
                   className={`rounded-xl p-4 shadow-sm border flex items-center justify-between group transition-all duration-300 ${
                     isToday 
-                      ? 'bg-emerald-600 dark:bg-emerald-800 border-emerald-500 shadow-lg scale-[1.02] z-10' 
+                      ? 'bg-emerald-50 dark:bg-emerald-900/20 border-primary shadow-md scale-[1.02] z-10 ring-1 ring-primary/10' 
                       : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800'
                   }`}
                 >
                   <div className="flex-1 cursor-pointer" onClick={() => onSelectDay(day)}>
                     <div className={`text-xs font-bold uppercase tracking-wider ${
-                      isToday ? 'text-emerald-100/80' : 'text-gray-400'
+                      isToday ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'
                     }`}>{day}</div>
                     {plan ? (
                       <div>
                         <div className="flex items-baseline gap-2 mb-0.5">
                           <span className={`font-bold text-lg ${
-                            isToday ? 'text-white' : 'text-primary'
+                            isToday ? 'text-primary' : 'text-primary'
                           }`}>{plan.dailyTargets.calories} kcal</span>
                           <span className={`text-xs font-medium ${
-                            isToday ? 'text-emerald-100/90' : 'text-gray-500 dark:text-gray-400'
+                            isToday ? 'text-gray-600 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'
                           }`}>
                             {plan.dailyTargets.protein} Protein • {plan.dailyTargets.carbs} Carbs • {plan.dailyTargets.fats} Fat
                           </span>
                         </div>
                         <div className={`text-xs line-clamp-1 ${
-                          isToday ? 'text-emerald-50/70' : 'text-gray-400'
+                          isToday ? 'text-gray-500 dark:text-gray-500' : 'text-gray-400'
                         }`}>{plan.summary}</div>
                       </div>
                     ) : (
                       <div className={`italic text-sm mt-1 ${
-                        isToday ? 'text-emerald-100/60' : 'text-gray-300 dark:text-gray-700'
+                        isToday ? 'text-gray-400 dark:text-gray-500' : 'text-gray-300 dark:text-gray-700'
                       }`}>Empty</div>
                     )}
                   </div>
@@ -271,7 +271,7 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
                       <button 
                         onClick={(e) => handleDeleteClick(e, day)}
                         className={`p-2 transition-colors ${
-                          isToday ? 'text-emerald-100 hover:text-white' : 'text-gray-400 hover:text-red-500'
+                          isToday ? 'text-gray-400 hover:text-red-500' : 'text-gray-400 hover:text-red-500'
                         }`}
                         title="Clear Day"
                       >
@@ -281,10 +281,10 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
                       </button>
                     ) : (
                       <Button 
-                        variant={isToday ? "secondary" : "ghost"} 
+                        variant={isToday ? "outline" : "ghost"} 
                         size="sm" 
                         onClick={() => onSelectDay(day)}
-                        className={isToday ? "bg-white/20 hover:bg-white/30 border-none text-white" : ""}
+                        className={isToday ? "border-primary text-primary hover:bg-primary/10" : ""}
                       >
                         Add
                       </Button>
