@@ -111,11 +111,13 @@ Real-time synchronization between LocalStorage and Cloud Database (Vercel Postgr
 - **Auto-generated Identity**: Fitness-themed username on first visit (e.g., "IronKing_42").
 - **1,000,000+ Combinations**: Large pool of unique usernames.
 - **Seamless Upgrade**: Register with email/password to convert anonymous data to a cloud account.
+- **Status Label**: "Device Only" (amber) - indicates data stored locally only.
 
 #### Registered Users
 - **Profile Management**: View stats and usage history.
 - **Session Persistence**: Stays logged in via secure HTTP-only cookies.
 - **Customization**: Ability to keep the auto-generated name or pick a new one.
+- **Status Label**: "Cloud Sync ✓" (green) - indicates data backed up to cloud.
 
 ---
 
