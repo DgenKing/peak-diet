@@ -134,13 +134,15 @@ export function BurgerMenu({
               <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Your Week</span>
             </button>
 
-            <button
-              onClick={() => handleNavigate(onUsage)}
-              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-            >
-              <span className="text-lg">📊</span>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Usage Stats</span>
-            </button>
+            {!isAnonymous && (
+              <button
+                onClick={() => handleNavigate(onUsage)}
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                <span className="text-lg">📊</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Usage Stats</span>
+              </button>
+            )}
 
             <button
               onClick={() => handleNavigate(onHowToUse)}
