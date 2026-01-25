@@ -120,7 +120,10 @@ function App() {
   const { weeklySchedule, setDayPlan, copyToDays, userStats, saveUserStats, cachedShoppingList, hasScheduleChanged, saveShoppingList, clearWeek } = useDietStore();
   const { userId, username, isAnonymous, logout } = useUser();
   
-  const [screen, setScreen] = useState<Screen>('landing');
+  const [screen, setScreen] = useState<Screen>(() => {
+    const hasPlan = Object.values(weeklySchedule).some(p => p !== null);
+    return hasPlan ? 'planner' : 'landing';
+  });
   const [previousScreen, setPreviousScreen] = useState<Screen>('landing');
   const [mode, setMode] = useState<AppMode | null>(null);
   const [simpleStep, setSimpleStep] = useState<SimpleStep>('goal');

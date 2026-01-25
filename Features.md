@@ -140,6 +140,8 @@ A transparency feature showing your AI consumption.
 - **Theme Toggle**: Switch between Light and Dark modes.
 
 #### User Experience
+- **Smart Entry Logic**: Automatically detects existing meal plans on load, skipping the landing page to provide instant access to the weekly schedule.
+- **Visual Day Highlighting**: The current system day is highlighted in the Weekly Planner with a high-contrast emerald theme, making it easy to track today's goals.
 - **Animated Loading**: Pulsing logo spinner during AI generation.
 - **500+ Nutrition Tips**: Cycling tips during wait times.
 - **Success Feedback**: Modal confirmations for sign-out and library actions.

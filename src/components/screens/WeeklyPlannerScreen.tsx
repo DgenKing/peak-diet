@@ -228,25 +228,41 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
           <div className="space-y-3">
             {days.map((day) => {
               const plan = schedule[day];
+              const isToday = day === new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
+
               return (
                 <div 
                   key={day}
-                  className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between group"
+                  className={`rounded-xl p-4 shadow-sm border flex items-center justify-between group transition-all duration-300 ${
+                    isToday 
+                      ? 'bg-emerald-600 dark:bg-emerald-800 border-emerald-500 shadow-lg scale-[1.02] z-10' 
+                      : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800'
+                  }`}
                 >
                   <div className="flex-1 cursor-pointer" onClick={() => onSelectDay(day)}>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">{day}</div>
+                    <div className={`text-xs font-bold uppercase tracking-wider ${
+                      isToday ? 'text-emerald-100/80' : 'text-gray-400'
+                    }`}>{day}</div>
                     {plan ? (
                       <div>
                         <div className="flex items-baseline gap-2 mb-0.5">
-                          <span className="font-bold text-primary text-lg">{plan.dailyTargets.calories} kcal</span>
-                          <span className="text-xs text-gray-500 font-medium dark:text-gray-400">
+                          <span className={`font-bold text-lg ${
+                            isToday ? 'text-white' : 'text-primary'
+                          }`}>{plan.dailyTargets.calories} kcal</span>
+                          <span className={`text-xs font-medium ${
+                            isToday ? 'text-emerald-100/90' : 'text-gray-500 dark:text-gray-400'
+                          }`}>
                             {plan.dailyTargets.protein} Protein • {plan.dailyTargets.carbs} Carbs • {plan.dailyTargets.fats} Fat
                           </span>
                         </div>
-                        <div className="text-xs text-gray-400 line-clamp-1">{plan.summary}</div>
+                        <div className={`text-xs line-clamp-1 ${
+                          isToday ? 'text-emerald-50/70' : 'text-gray-400'
+                        }`}>{plan.summary}</div>
                       </div>
                     ) : (
-                      <div className="text-gray-300 dark:text-gray-700 italic text-sm mt-1">Empty</div>
+                      <div className={`italic text-sm mt-1 ${
+                        isToday ? 'text-emerald-100/60' : 'text-gray-300 dark:text-gray-700'
+                      }`}>Empty</div>
                     )}
                   </div>
                   
@@ -254,7 +270,9 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
                     {plan ? (
                       <button 
                         onClick={(e) => handleDeleteClick(e, day)}
-                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                        className={`p-2 transition-colors ${
+                          isToday ? 'text-emerald-100 hover:text-white' : 'text-gray-400 hover:text-red-500'
+                        }`}
                         title="Clear Day"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -262,7 +280,12 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
                         </svg>
                       </button>
                     ) : (
-                      <Button variant="ghost" size="sm" onClick={() => onSelectDay(day)}>
+                      <Button 
+                        variant={isToday ? "secondary" : "ghost"} 
+                        size="sm" 
+                        onClick={() => onSelectDay(day)}
+                        className={isToday ? "bg-white/20 hover:bg-white/30 border-none text-white" : ""}
+                      >
                         Add
                       </Button>
                     )}
