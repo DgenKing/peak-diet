@@ -206,3 +206,4 @@ interface DietPlan {
 - [ ] Nutritionist sharing (export PDF or share link).
 - [ ] Voice input for modifications.
 - [ ] Premium tier with infinite save slots and advanced analytics.
+- [ ] "Recalibrate" button: Conditional option to fix remaining daily macros in one step after manual edits.
