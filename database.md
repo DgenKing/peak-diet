@@ -382,6 +382,8 @@ Total function count: **6** (well under the 12 limit).
 - **Full Application Lifecycle**: From anonymous generation to account registration and cross-device sync.
 - **Token Economy**: Every AI interaction tracked and visible to the user.
 - **Hobby Plan Optimized**: Entire backend fits within 7 serverless functions.
+- **Sign Out Fix**: Logout keeps username, sets `is_anonymous: true` (no re-init race condition).
+- **Status Labels**: "Cloud Sync ✓" (green) when signed in, "Device Only" (amber) when not.
 
 ### Future Considerations
 
@@ -394,3 +396,75 @@ Total function count: **6** (well under the 12 limit).
   ```
 - UI: Show 3 save slots, user picks which to overwrite
 - Call them "Saved Plans" or "My Diets" in UI
+
+jan 24 11pm:
+I have completed the full backend integration and synchronized the frontend store with the database. Here is a summary of what has been
+  added and how to test it.
+
+  What's Been Added
+
+   1. Consolidated Backend (Hobby Plan Optimized):
+       * Reduced the number of serverless functions to 7 files in the api/ root to stay within Vercel's limits.
+       * `api/ai.ts`: Handles all AI logic (generate, update, meal edit, shopping list) with token tracking.
+       * `api/auth.ts`: Handles login, registration, and session management.
+       * `api/users.ts`: Handles anonymous user initialization.
+       * `api/plans.ts`: Full CRUD for saving diet plans.
+       * `api/schedules.ts`: Persistence for the 7-day weekly planner.
+       * `api/usage.ts`: Aggregates token consumption data.
+
+   2. Advanced Store Sync:
+       * useDietStore.ts now automatically detects if a user is logged in.
+       * Registered users have their weekly schedule and saved plans synced to the Neon Postgres database in real-time.
+       * Anonymous users continue to use LocalStorage as a fallback.
+
+   3. New UI Components:
+       * `AuthModal.tsx`: A polished interface for Signing In and Creating Accounts.
+       * `UsageDashboardScreen.tsx`: A new screen showing lifetime tokens, feature usage, and daily activity.
+       * Updated `BurgerMenu.tsx`: Now shows user status (Anonymous/Registered) and links to Usage Stats.
+
+  ---
+
+  Step-by-Step Testing Process
+
+  To verify everything is working correctly, follow these steps in your local environment (npm run dev or vercel dev):
+
+  1. Anonymous Initialization
+   * Open the app in a fresh tab (or clear LocalStorage).
+   * Open the Burger Menu (top right).
+   * Verify: You should see a random "Fitness Username" (e.g., IronKing_42) and the label "Anonymous".
+
+  2. Server-side AI & Token Tracking
+   * Go through the "Simple" or "Advanced" flow to generate a plan.
+   * Once on the Dashboard, click a meal to open the Meal Editor.
+   * Send an update instruction (e.g., "swap chicken for salmon").
+   * Verify: The meal updates. (This confirms api/ai.ts is handling the request and tracking tokens).
+
+  3. Account Registration (Upgrade)
+   * Open the Burger Menu and click "Sign In to Sync".
+   * Switch to the "Create Account" tab.
+   * Register with an email and password.
+   * Verify: After success, the menu should now show your chosen email/username and the label "Registered".
+
+  4. Database Persistence (Sync)
+   * Go to "Your Week" and add plans to a few days.
+   * Refresh the page.
+   * Verify: Your plans should remain exactly as they were (they are now being fetched from the database on load).
+
+  5. Usage Statistics
+   * Open the Burger Menu and click "Usage Stats".
+   * Verify: You should see a breakdown of the tokens consumed by your previous generation and meal edit. It will show a "Daily Activity"
+     bar chart.
+
+  6. Library Management
+   * On any diet plan, click "Save to Library".
+   * Go to the library (if implemented) or use the deleteFromLibrary action.
+   * Verify: Plan is saved/removed from the saved_plans table in the database.
+
+  7. Logout & Re-auth
+   * Open the Burger Menu and click "Sign Out".
+   * Verify: You are reverted to an anonymous user.
+   * Sign back in with your registered account.
+   * Verify: Your previous weekly schedule is restored immediately.
+
+  Note: Ensure your .env.local contains the POSTGRES_URL and VITE_DEEPSEEK_API_KEY for local testing. All changes are currently on the
+  test-db branch.

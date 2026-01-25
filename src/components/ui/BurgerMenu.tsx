@@ -87,8 +87,8 @@ export function BurgerMenu({
                 <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
                   {username || 'Guest User'}
                 </p>
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
-                  {isAnonymous ? 'Anonymous' : 'Registered'}
+                <p className={`text-[10px] uppercase tracking-widest font-bold ${isAnonymous ? 'text-amber-500' : 'text-green-500'}`}>
+                  {isAnonymous ? 'Device Only' : 'Cloud Sync ✓'}
                 </p>
               </div>
             </div>

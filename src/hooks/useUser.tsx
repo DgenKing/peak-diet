@@ -141,6 +141,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      // Clear server session (cookie)
       await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,9 +150,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Logout error:', err);
     }
-    setUser(null);
-    localStorage.removeItem(USER_KEY);
-    initStarted.current = false;
+
+    // Keep same user but mark as anonymous (no sync)
+    if (user) {
+      const anonymousUser = { ...user, is_anonymous: true };
+      setUser(anonymousUser);
+      localStorage.setItem(USER_KEY, JSON.stringify(anonymousUser));
+    }
   };
 
   const isAnonymous = user ? (user.is_anonymous === true) : true;
