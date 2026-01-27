@@ -22,7 +22,7 @@ export default async function handler(req: AuthRequest, res: VercelResponse) {
     }
   }
 
-  // POST - Create new schedule
+  // POST - Create or update schedule (UPSERT)
   if (req.method === 'POST') {
     const { name, schedule_data, is_active } = req.body;
 
@@ -31,6 +31,12 @@ export default async function handler(req: AuthRequest, res: VercelResponse) {
     }
 
     try {
+      // Delete existing schedule with same name for this user (UPSERT behavior)
+      await db.query(
+        'DELETE FROM weekly_schedules WHERE user_id = $1 AND name = $2',
+        [userId, name]
+      );
+
       // If setting as active, deactivate others first
       if (is_active) {
         await db.query(
