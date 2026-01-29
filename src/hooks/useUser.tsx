@@ -1,14 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { authClient } from '../auth';
 
 const DEVICE_ID_KEY = 'peak_diet_device_id';
 const USER_KEY = 'peak_diet_user';
 
 interface User {
   id: string;
-  device_id: string;
+  device_id?: string;
   username: string;
   email: string | null;
   is_anonymous: boolean;
+  emailVerified: boolean;
 }
 
 interface UserContextType {
@@ -16,10 +18,14 @@ interface UserContextType {
   userId: string | null;
   username: string | null;
   isAnonymous: boolean;
+  isEmailVerified: boolean;
   loading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<User>;
-  register: (email: string, password: string, username: string) => Promise<User>;
+  login: (email: string, password: string) => Promise<any>;
+  register: (email: string, password: string, username: string) => Promise<any>;
+  verifyEmail: (email: string, code: string) => Promise<void>;
+  forgetPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -37,29 +43,36 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
     return null;
   });
-  const [loading, setLoading] = useState(!user);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const initStarted = useRef(false);
 
   useEffect(() => {
-    if (user) {
-      setLoading(false);
-      return;
-    }
     if (initStarted.current) return;
     initStarted.current = true;
 
     const initUser = async () => {
       try {
-        const authResponse = await fetch('/api/auth?action=me');
-        if (authResponse.ok) {
-          const userData = await authResponse.json();
+        // 1. Check Neon Auth Session
+        const sessionResult = await authClient.getSession();
+        
+        if (sessionResult.data?.session && sessionResult.data?.user) {
+          const neonUser = sessionResult.data.user;
+          const userData: User = {
+            id: neonUser.id,
+            username: neonUser.name || neonUser.email?.split('@')[0] || 'User',
+            email: neonUser.email || null,
+            is_anonymous: false,
+            emailVerified: !!neonUser.emailVerified
+          };
           setUser(userData);
           localStorage.setItem(USER_KEY, JSON.stringify(userData));
+          setLoading(false);
           return;
         }
 
+        // 2. Fallback to Guest/Anonymous User
         let deviceId = localStorage.getItem(DEVICE_ID_KEY);
         if (!deviceId) {
           deviceId = crypto.randomUUID();
@@ -75,8 +88,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         if (!response.ok) throw new Error('Failed to initialize user');
 
         const userData = await response.json();
-        setUser(userData);
-        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+        const guestUser = { ...userData, emailVerified: false };
+        setUser(guestUser);
+        localStorage.setItem(USER_KEY, JSON.stringify(guestUser));
       } catch (err) {
         console.error('User init error:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -86,23 +100,52 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     };
 
     initUser();
-  }, [user]);
+  }, []);
 
   const login = async (email: string, password: string) => {
     setError(null);
     try {
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'login', email, password }),
+      const result = await authClient.signIn.email({
+        email,
+        password,
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Login failed');
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
 
-      setUser(data.user);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-      return data.user;
+      // Get full session after login
+      const sessionResult = await authClient.getSession();
+      if (!sessionResult.data?.user) throw new Error('Failed to get user session');
+
+      const neonUser = sessionResult.data.user;
+      const userData: User = {
+        id: neonUser.id,
+        username: neonUser.name || neonUser.email?.split('@')[0] || 'User',
+        email: neonUser.email || null,
+        is_anonymous: false,
+        emailVerified: !!neonUser.emailVerified
+      };
+
+      // Sync user to custom users table (for existing users or in case of missed sync)
+      try {
+        await fetch('/api/users/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: neonUser.id,
+            email: userData.email,
+            username: userData.username,
+          }),
+        });
+      } catch (syncErr) {
+        console.error('Failed to sync user to database:', syncErr);
+        // Don't throw - login was successful
+      }
+
+      setUser(userData);
+      localStorage.setItem(USER_KEY, JSON.stringify(userData));
+      return userData;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed';
       setError(msg);
@@ -112,28 +155,113 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (email: string, password: string, username: string) => {
     setError(null);
+    console.log('Starting registration for:', email);
     try {
-      const deviceId = localStorage.getItem(DEVICE_ID_KEY);
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'register', 
-          email, 
-          password, 
-          username,
-          device_id: deviceId 
-        }),
+      const result = await authClient.signUp.email({
+        email,
+        password,
+        name: username,
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Registration failed');
+      console.log('Registration result:', result);
 
-      setUser(data.user);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-      return data.user;
+      if (result.error) {
+        console.error('Registration error details:', result.error);
+        throw new Error(result.error.message);
+      }
+
+      // Sync user to custom users table in database
+      try {
+        await fetch('/api/users/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: result.data.user.id,
+            email: email,
+            username: username,
+          }),
+        });
+      } catch (syncErr) {
+        console.error('Failed to sync user to database:', syncErr);
+        // Don't throw - auth user was created successfully
+      }
+
+      // Create unverified user state (similar to login flow)
+      const userData: User = {
+        id: result.data.user.id,
+        username: username,
+        email: email,
+        is_anonymous: false,
+        emailVerified: result.data.user.emailVerified || false, // Should be false until verified
+      };
+
+      setUser(userData);
+      localStorage.setItem(USER_KEY, JSON.stringify(userData));
+
+      return result.data;
     } catch (err) {
+      console.error('Registration catch block:', err);
       const msg = err instanceof Error ? err.message : 'Registration failed';
+      setError(msg);
+      throw err;
+    }
+  };
+
+  const verifyEmail = async (email: string, code: string) => {
+    setError(null);
+    try {
+      const result = await authClient.emailOtp.verifyEmail({
+        email,
+        otp: code,
+      });
+
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+
+      // Update user state to verified
+      if (user) {
+        const updatedUser = { ...user, emailVerified: true };
+        setUser(updatedUser);
+        localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Verification failed';
+      setError(msg);
+      throw err;
+    }
+  };
+
+  const forgetPassword = async (email: string) => {
+    setError(null);
+    try {
+      const result = await authClient.emailOtp.sendVerificationOtp({
+        email,
+        type: 'forget-password'
+      });
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to send reset code';
+      setError(msg);
+      throw err;
+    }
+  };
+
+  const resetPassword = async (email: string, otp: string, newPassword: string) => {
+    setError(null);
+    try {
+      const result = await authClient.emailOtp.resetPassword({
+        email,
+        otp,
+        password: newPassword
+      });
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to reset password';
       setError(msg);
       throw err;
     }
@@ -141,37 +269,58 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      // Clear server session (cookie)
-      await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'logout' }),
-      });
+      await authClient.signOut();
     } catch (err) {
       console.error('Logout error:', err);
     }
 
-    // Keep same user but mark as anonymous (no sync)
-    if (user) {
-      const anonymousUser = { ...user, is_anonymous: true };
-      setUser(anonymousUser);
-      localStorage.setItem(USER_KEY, JSON.stringify(anonymousUser));
+    // Fallback to anonymous user
+    let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+    if (!deviceId) {
+      deviceId = crypto.randomUUID();
+      localStorage.setItem(DEVICE_ID_KEY, deviceId);
     }
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: deviceId }),
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        const guestUser = { ...userData, emailVerified: false };
+        setUser(guestUser);
+        localStorage.setItem(USER_KEY, JSON.stringify(guestUser));
+        return;
+      }
+    } catch (e) {
+      console.error('Error re-initializing guest:', e);
+    }
+
+    setUser(null);
+    localStorage.removeItem(USER_KEY);
   };
 
   const isAnonymous = user ? (user.is_anonymous === true) : true;
+  const isEmailVerified = user ? user.emailVerified : false;
 
   const value = {
     user,
     userId: user?.id || null,
     username: user?.username || null,
     isAnonymous,
+    isEmailVerified,
     loading,
     error,
     login,
     register,
+    verifyEmail,
+    forgetPassword,
+    resetPassword,
     logout,
   };
+
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
