@@ -3,6 +3,7 @@ import type { AppMode, SimpleFormData, AdvancedFormData, SimpleStep, AdvancedSte
 import { useTheme } from './hooks/useTheme';
 import { BurgerMenu } from './components/ui/BurgerMenu';
 import { AuthModal } from './components/AuthModal';
+import { VerificationCodeModal } from './components/VerificationCodeModal';
 import { Modal } from './components/ui/Modal';
 
 // Screens
@@ -118,7 +119,7 @@ type Screen = 'landing' | 'getting-started' | 'feedback' | 'mode-select' | 'simp
 function App() {
   const { theme, toggleTheme } = useTheme();
   const { weeklySchedule, setDayPlan, copyToDays, userStats, saveUserStats, cachedShoppingList, hasScheduleChanged, saveShoppingList, clearWeek } = useDietStore();
-  const { userId, username, isAnonymous, logout } = useUser();
+  const { user, userId, username, isAnonymous, isEmailVerified, logout } = useUser();
   
   const [screen, setScreen] = useState<Screen>(() => {
     const hasPlan = Object.values(weeklySchedule).some(p => p !== null);
@@ -136,6 +137,7 @@ function App() {
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutSuccessOpen, setIsLogoutSuccessOpen] = useState(false);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
 
   // For burger menu navigation guard on unsaved plans
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
@@ -229,6 +231,7 @@ function App() {
         }}
         username={username}
         isAnonymous={isAnonymous}
+        isEmailVerified={isEmailVerified}
         onSignIn={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
         onUsage={() => { setPreviousScreen(screen); setScreen('usage'); }}
@@ -242,6 +245,7 @@ function App() {
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 
+        onRegisterSuccess={() => setIsVerificationModalOpen(true)}
       />
       <Modal
         isOpen={isLogoutSuccessOpen}
@@ -250,6 +254,11 @@ function App() {
         message="You have been successfully signed out. Your data will now be stored locally until you sign in again."
         variant="success"
         showFooter={false}
+      />
+      <VerificationCodeModal
+        isOpen={isVerificationModalOpen}
+        onClose={() => setIsVerificationModalOpen(false)}
+        userEmail={user?.email || ''}
       />
     </>
   );

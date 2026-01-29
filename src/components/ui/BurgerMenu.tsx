@@ -9,6 +9,7 @@ interface BurgerMenuProps {
   onClearWeek: () => void;
   username: string | null;
   isAnonymous: boolean;
+  isEmailVerified: boolean;
   onSignIn: () => void;
   onLogout: () => void;
   onUsage: () => void;
@@ -24,6 +25,7 @@ export function BurgerMenu({
   onClearWeek, 
   username,
   isAnonymous,
+  isEmailVerified,
   onSignIn,
   onLogout,
   onUsage,
@@ -87,8 +89,8 @@ export function BurgerMenu({
                 <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
                   {username || 'Guest User'}
                 </p>
-                <p className={`text-[10px] uppercase tracking-widest font-bold ${isAnonymous ? 'text-amber-500' : 'text-green-500'}`}>
-                  {isAnonymous ? 'Device Only' : 'Cloud Sync ✓'}
+                <p className={`text-[10px] uppercase tracking-widest font-bold ${isAnonymous ? 'text-amber-500' : (isEmailVerified ? 'text-green-500' : 'text-red-500')}`}>
+                  {isAnonymous ? 'Device Only' : (isEmailVerified ? 'Cloud Sync ✓' : 'Unverified ⚠')}
                 </p>
               </div>
             </div>
