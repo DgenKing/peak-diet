@@ -30,3 +30,10 @@ dist-ssr
 # Accounts
 accounts/
 
+# Temporary docs and test files
+MIGRATION_COMPLETE.md
+MIGRATION_README.md
+auth.md
+fix.md
+signout.png
+src/test-auth-connection.mjs
