@@ -398,11 +398,31 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    // Clear Neon Auth session with credentials
     try {
-      await authClient.signOut();
+      await authClient.signOut({
+        fetchOptions: {
+          credentials: 'include'
+        }
+      });
     } catch (err) {
       console.error('Logout error:', err);
     }
+
+    // Clear JWT cookie
+    try {
+      await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+        credentials: 'include',
+      });
+    } catch (err) {
+      console.error('Failed to clear JWT:', err);
+    }
+
+    // Clear stored user data before creating guest
+    localStorage.removeItem(USER_KEY);
 
     // Create fresh anonymous user with new device_id
     // (old device_id is linked to registered user, can't reuse)
