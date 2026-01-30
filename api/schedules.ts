@@ -52,7 +52,16 @@ export default async function handler(req: AuthRequest, res: VercelResponse) {
       return res.status(201).json(rows[0]);
     } catch (error) {
       console.error('Error creating schedule:', error);
-      return res.status(500).json({ error: 'Internal server error' });
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown',
+        code: (error as any)?.code,
+        userId,
+        name
+      });
+      return res.status(500).json({
+        error: 'Failed to save schedule',
+        details: error instanceof Error ? error.message : 'Database connection error'
+      });
     }
   }
 

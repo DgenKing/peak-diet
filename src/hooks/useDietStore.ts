@@ -63,11 +63,13 @@ export function useDietStore() {
           // Fetch plans
           const plansRes = await fetch('/api/plans');
           const plansData = await plansRes.json();
-          
+
           // Fetch schedules
           const schedulesRes = await fetch('/api/schedules');
           const schedulesData = await schedulesRes.json();
-          const activeSchedule = schedulesData.find((s: any) => s.is_active);
+          const activeSchedule = Array.isArray(schedulesData)
+            ? schedulesData.find((s: any) => s.is_active)
+            : null;
 
           setStore(prev => ({
             ...prev,

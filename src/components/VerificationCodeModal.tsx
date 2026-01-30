@@ -43,8 +43,24 @@ export function VerificationCodeModal({ isOpen, onClose, userEmail }: Verificati
 
   const handleResend = async () => {
     setResendCooldown(60);
-    // TODO: Call resend verification email API
-    // await authClient.sendVerificationEmail();
+    setError(null);
+    try {
+      const { authClient } = await import('../auth');
+      console.log('Sending verification OTP to:', userEmail);
+      const result = await authClient.emailOtp.sendVerificationOtp({
+        email: userEmail,
+        type: 'email-verification'
+      });
+      console.log('Resend result:', result);
+      if (result.error) {
+        console.error('Resend error:', result.error);
+        throw new Error(result.error.message || 'Failed to send verification code');
+      }
+    } catch (err) {
+      console.error('Failed to resend verification code:', err);
+      setError(err instanceof Error ? err.message : 'Failed to resend code. Please try again.');
+      setResendCooldown(0); // Reset cooldown on error
+    }
   };
 
   return (

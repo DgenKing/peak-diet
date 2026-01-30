@@ -59,13 +59,47 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         
         if (sessionResult.data?.session && sessionResult.data?.user) {
           const neonUser = sessionResult.data.user;
-          const userData: User = {
+          let userData: User = {
             id: neonUser.id,
             username: neonUser.name || neonUser.email?.split('@')[0] || 'User',
             email: neonUser.email || null,
             is_anonymous: false,
             emailVerified: !!neonUser.emailVerified
           };
+
+          // MUST sync to get correct database ID and JWT token
+          if (neonUser.email) {
+            const deviceId = localStorage.getItem(DEVICE_ID_KEY);
+            try {
+              const syncResponse = await fetch('/api/users/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  user_id: neonUser.id,
+                  email: neonUser.email,
+                  username: userData.username,
+                  device_id: deviceId,
+                }),
+              });
+
+              if (syncResponse.ok) {
+                const dbUser = await syncResponse.json();
+                // Use database ID, not Neon ID
+                userData.id = dbUser.id;
+                userData.device_id = dbUser.device_id;
+
+                // Get JWT token for API authentication
+                await fetch('/api/auth/jwt', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId: dbUser.id }),
+                });
+              }
+            } catch (err) {
+              console.error('Failed to sync user on init:', err);
+            }
+          }
+
           setUser(userData);
           localStorage.setItem(USER_KEY, JSON.stringify(userData));
           setLoading(false);
@@ -129,7 +163,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       // Sync user to custom users table (for existing users or in case of missed sync)
       try {
-        await fetch('/api/users/sync', {
+        const syncResponse = await fetch('/api/users/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -138,9 +172,53 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             username: userData.username,
           }),
         });
+
+        if (syncResponse.ok) {
+          const dbUser = await syncResponse.json();
+          // Use the database user ID (old ID for migrated users, new ID for new users)
+          // This ensures meal plans and other data are accessible
+          userData.id = dbUser.id;
+          userData.device_id = dbUser.device_id;
+
+          // Get JWT token for API authentication
+          try {
+            await fetch('/api/auth/jwt', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: dbUser.id }),
+            });
+          } catch (jwtErr) {
+            console.error('Failed to get JWT token:', jwtErr);
+          }
+        }
       } catch (syncErr) {
-        console.error('Failed to sync user to database:', syncErr);
-        // Don't throw - login was successful
+        console.error('Failed to sync user to database, retrying...', syncErr);
+        // Retry once
+        try {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const retryResponse = await fetch('/api/users/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: neonUser.id,
+              email: userData.email,
+              username: userData.username,
+            }),
+          });
+          if (retryResponse.ok) {
+            const dbUser = await retryResponse.json();
+            userData.id = dbUser.id;
+            userData.device_id = dbUser.device_id;
+            await fetch('/api/auth/jwt', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: dbUser.id }),
+            });
+            console.log('Sync retry succeeded');
+          }
+        } catch (retryErr) {
+          console.error('Sync retry also failed:', retryErr);
+        }
       }
 
       setUser(userData);
@@ -171,29 +249,76 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Sync user to custom users table in database
+      let userData: User = {
+        id: result.data.user.id,
+        username: username,
+        email: email,
+        is_anonymous: false,
+        emailVerified: result.data.user.emailVerified || false,
+      };
+
+      // Get device_id to link anonymous user's data
+      const deviceId = localStorage.getItem(DEVICE_ID_KEY);
+
       try {
-        await fetch('/api/users/sync', {
+        const syncResponse = await fetch('/api/users/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             user_id: result.data.user.id,
             email: email,
             username: username,
+            device_id: deviceId,
           }),
         });
-      } catch (syncErr) {
-        console.error('Failed to sync user to database:', syncErr);
-        // Don't throw - auth user was created successfully
-      }
 
-      // Create unverified user state (similar to login flow)
-      const userData: User = {
-        id: result.data.user.id,
-        username: username,
-        email: email,
-        is_anonymous: false,
-        emailVerified: result.data.user.emailVerified || false, // Should be false until verified
-      };
+        if (syncResponse.ok) {
+          const dbUser = await syncResponse.json();
+          // Use the database user ID (could be old ID for migrated users)
+          userData.id = dbUser.id;
+          userData.device_id = dbUser.device_id;
+
+          // Get JWT token for API authentication
+          try {
+            await fetch('/api/auth/jwt', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: dbUser.id }),
+            });
+          } catch (jwtErr) {
+            console.error('Failed to get JWT token:', jwtErr);
+          }
+        }
+      } catch (syncErr) {
+        console.error('Failed to sync user to database, retrying...', syncErr);
+        // Retry once
+        try {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const retryResponse = await fetch('/api/users/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: result.data.user.id,
+              email: email,
+              username: username,
+              device_id: deviceId,
+            }),
+          });
+          if (retryResponse.ok) {
+            const dbUser = await retryResponse.json();
+            userData.id = dbUser.id;
+            userData.device_id = dbUser.device_id;
+            await fetch('/api/auth/jwt', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: dbUser.id }),
+            });
+            console.log('Sync retry succeeded');
+          }
+        } catch (retryErr) {
+          console.error('Sync retry also failed:', retryErr);
+        }
+      }
 
       setUser(userData);
       localStorage.setItem(USER_KEY, JSON.stringify(userData));
@@ -274,12 +399,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       console.error('Logout error:', err);
     }
 
-    // Fallback to anonymous user
-    let deviceId = localStorage.getItem(DEVICE_ID_KEY);
-    if (!deviceId) {
-      deviceId = crypto.randomUUID();
-      localStorage.setItem(DEVICE_ID_KEY, deviceId);
-    }
+    // Create fresh anonymous user with new device_id
+    // (old device_id is linked to registered user, can't reuse)
+    const deviceId = crypto.randomUUID();
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
 
     try {
       const response = await fetch('/api/users', {

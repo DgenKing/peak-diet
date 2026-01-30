@@ -13,23 +13,25 @@ interface BurgerMenuProps {
   onSignIn: () => void;
   onLogout: () => void;
   onUsage: () => void;
+  onVerifyEmail: () => void;
   onBeforeNavigate?: (navigateFn: () => void) => void;
 }
 
-export function BurgerMenu({ 
-  theme, 
-  onToggleTheme, 
-  onYourWeek, 
-  onHowToUse, 
-  onFeedback, 
-  onClearWeek, 
+export function BurgerMenu({
+  theme,
+  onToggleTheme,
+  onYourWeek,
+  onHowToUse,
+  onFeedback,
+  onClearWeek,
   username,
   isAnonymous,
   isEmailVerified,
   onSignIn,
   onLogout,
   onUsage,
-  onBeforeNavigate 
+  onVerifyEmail,
+  onBeforeNavigate
 }: BurgerMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -83,11 +85,11 @@ export function BurgerMenu({
           <div className="px-4 py-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xl font-bold">
-                {username?.charAt(0).toUpperCase() || '?'}
+                {isAnonymous ? 'G' : (username?.charAt(0).toUpperCase() || '?')}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                  {username || 'Guest User'}
+                  {isAnonymous ? 'Guest' : (username || 'User')}
                 </p>
                 <p className={`text-[10px] uppercase tracking-widest font-bold ${isAnonymous ? 'text-amber-500' : (isEmailVerified ? 'text-green-500' : 'text-red-500')}`}>
                   {isAnonymous ? 'Device Only' : (isEmailVerified ? 'Cloud Sync ✓' : 'Unverified ⚠')}
@@ -102,12 +104,22 @@ export function BurgerMenu({
                 Sign In to Sync
               </button>
             ) : (
-              <button
-                onClick={() => { onLogout(); setIsOpen(false); }}
-                className="w-full py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              >
-                Sign Out
-              </button>
+              <div className="space-y-2">
+                {!isEmailVerified && (
+                  <button
+                    onClick={() => { onVerifyEmail(); setIsOpen(false); }}
+                    className="w-full py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition-colors shadow-sm"
+                  >
+                    Verify Email
+                  </button>
+                )}
+                <button
+                  onClick={() => { onLogout(); setIsOpen(false); }}
+                  className="w-full py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
             )}
           </div>
 
