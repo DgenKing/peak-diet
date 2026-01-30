@@ -7,9 +7,10 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRegisterSuccess?: () => void;
+  onLoginSuccess?: () => void;
 }
 
-export function AuthModal({ isOpen, onClose, onRegisterSuccess }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, onRegisterSuccess, onLoginSuccess }: AuthModalProps) {
   const { login, register, forgetPassword, resetPassword, loading: authLoading, username: guestUsername } = useUser();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
@@ -41,15 +42,15 @@ export function AuthModal({ isOpen, onClose, onRegisterSuccess }: AuthModalProps
       if (mode === 'login') {
         await login(email, password);
         onClose();
+        onLoginSuccess?.();
       } else if (mode === 'register') {
         await register(email, password, username);
         setEmail('');
         setPassword('');
         setUsername('');
         onClose();
-        if (onRegisterSuccess) {
-          onRegisterSuccess();
-        }
+        onLoginSuccess?.();
+        onRegisterSuccess?.();
       } else if (mode === 'forgot') {
         if (forgotStep === 'email') {
           await forgetPassword(email);

@@ -243,10 +243,11 @@ function App() {
 
   const sharedUI = (
     <>
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
         onRegisterSuccess={() => setIsVerificationModalOpen(true)}
+        onLoginSuccess={() => setScreen('planner')}
       />
       <Modal
         isOpen={isLogoutSuccessOpen}

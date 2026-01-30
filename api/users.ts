@@ -63,6 +63,25 @@ async function handleSync(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // First, check if email already exists (prevents upgrade conflicts)
+    const { rows: existingEmail } = await db.query(
+      'SELECT id, neon_user_id FROM users WHERE email = $1',
+      [email]
+    );
+
+    // If email exists, update that user instead of creating/upgrading
+    if (existingEmail.length > 0) {
+      const result = await db.query(
+        `UPDATE users
+         SET username = $2, is_anonymous = false, neon_user_id = $1
+         WHERE email = $3
+         RETURNING *`,
+        [user_id, username, email]
+      );
+      console.log('Linked to existing user by email:', result.rows[0]?.id);
+      return res.status(200).json(result.rows[0]);
+    }
+
     // ANONYMOUS USER UPGRADE: Check if there's an existing anonymous user with this device_id
     // This preserves their meal plans when they register
     if (device_id) {
@@ -179,12 +198,12 @@ async function handleSync(req: VercelRequest, res: VercelResponse) {
     }
 
     // Create new user in custom table (new registration)
-    // Generate device_id for new Neon Auth users (use their user_id as device_id)
+    // Use ON CONFLICT (email) to handle cases where email already exists
     const result = await db.query(
-      `INSERT INTO users (id, device_id, email, username, is_anonymous, neon_user_id, migration_status)
-       VALUES ($1::uuid, $1::text, $2, $3, false, $1::text, 'new')
-       ON CONFLICT (id) DO UPDATE
-       SET email = $2, username = $3, is_anonymous = false, neon_user_id = $1::text
+      `INSERT INTO users (device_id, email, username, is_anonymous, neon_user_id, migration_status)
+       VALUES ($1::text, $2, $3, false, $1::text, 'new')
+       ON CONFLICT (email) DO UPDATE
+       SET username = EXCLUDED.username, is_anonymous = false, neon_user_id = EXCLUDED.neon_user_id
        RETURNING *`,
       [user_id, email, username]
     );
