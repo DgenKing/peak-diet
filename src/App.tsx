@@ -235,6 +235,7 @@ function App() {
         onSignIn={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
         onUsage={() => { setPreviousScreen(screen); setScreen('usage'); }}
+        onVerifyEmail={() => setIsVerificationModalOpen(true)}
         onBeforeNavigate={useGuard ? (navigateFn) => setPendingNavigation(() => navigateFn) : undefined}
       />
     </div>
