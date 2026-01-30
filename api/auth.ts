@@ -29,6 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleRegister(req, res);
     } else if (action === 'logout') {
       return handleLogout(req, res);
+    } else if (action === 'issueJwt') {
+      return handleIssueJwt(req, res);
     }
   } else if (req.method === 'GET') {
     if (action === 'me') {
@@ -126,6 +128,36 @@ async function handleRegister(req: VercelRequest, res: VercelResponse) {
 async function handleLogout(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Set-Cookie', 'token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
   return res.status(200).json({ message: 'Logged out' });
+}
+
+async function handleIssueJwt(req: VercelRequest, res: VercelResponse) {
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'userId is required' });
+  }
+
+  try {
+    const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOptions = [
+      `token=${token}`,
+      'Path=/',
+      'HttpOnly',
+      `SameSite=${isProduction ? 'Strict' : 'Lax'}`,
+      `Max-Age=${7 * 24 * 60 * 60}`,
+    ];
+    if (isProduction) {
+      cookieOptions.push('Secure');
+    }
+    res.setHeader('Set-Cookie', cookieOptions.join('; '));
+
+    return res.status(200).json({ token });
+  } catch (error) {
+    console.error('Error creating JWT:', error);
+    return res.status(500).json({ error: 'Failed to create token' });
+  }
 }
 
 async function handleMe(req: VercelRequest, res: VercelResponse) {

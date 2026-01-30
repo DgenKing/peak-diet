@@ -71,10 +71,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           if (neonUser.email) {
             const deviceId = localStorage.getItem(DEVICE_ID_KEY);
             try {
-              const syncResponse = await fetch('/api/users/sync', {
+              const syncResponse = await fetch('/api/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                  action: 'sync',
                   user_id: neonUser.id,
                   email: neonUser.email,
                   username: userData.username,
@@ -89,10 +90,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                 userData.device_id = dbUser.device_id;
 
                 // Get JWT token for API authentication
-                await fetch('/api/auth/jwt', {
+                await fetch('/api/auth', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId: dbUser.id }),
+                  body: JSON.stringify({ action: 'issueJwt', userId: dbUser.id }),
                 });
               }
             } catch (err) {
@@ -163,10 +164,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       // Sync user to custom users table (for existing users or in case of missed sync)
       try {
-        const syncResponse = await fetch('/api/users/sync', {
+        const syncResponse = await fetch('/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            action: 'sync',
             user_id: neonUser.id,
             email: userData.email,
             username: userData.username,
@@ -182,10 +184,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
           // Get JWT token for API authentication
           try {
-            await fetch('/api/auth/jwt', {
+            await fetch('/api/auth', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: dbUser.id }),
+              body: JSON.stringify({ action: 'issueJwt', userId: dbUser.id }),
             });
           } catch (jwtErr) {
             console.error('Failed to get JWT token:', jwtErr);
@@ -196,10 +198,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         // Retry once
         try {
           await new Promise(resolve => setTimeout(resolve, 500));
-          const retryResponse = await fetch('/api/users/sync', {
+          const retryResponse = await fetch('/api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              action: 'sync',
               user_id: neonUser.id,
               email: userData.email,
               username: userData.username,
@@ -209,10 +212,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             const dbUser = await retryResponse.json();
             userData.id = dbUser.id;
             userData.device_id = dbUser.device_id;
-            await fetch('/api/auth/jwt', {
+            await fetch('/api/auth', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: dbUser.id }),
+              body: JSON.stringify({ action: 'issueJwt', userId: dbUser.id }),
             });
             console.log('Sync retry succeeded');
           }
@@ -261,10 +264,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       const deviceId = localStorage.getItem(DEVICE_ID_KEY);
 
       try {
-        const syncResponse = await fetch('/api/users/sync', {
+        const syncResponse = await fetch('/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            action: 'sync',
             user_id: result.data.user.id,
             email: email,
             username: username,
@@ -280,10 +284,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
           // Get JWT token for API authentication
           try {
-            await fetch('/api/auth/jwt', {
+            await fetch('/api/auth', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: dbUser.id }),
+              body: JSON.stringify({ action: 'issueJwt', userId: dbUser.id }),
             });
           } catch (jwtErr) {
             console.error('Failed to get JWT token:', jwtErr);
@@ -294,10 +298,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         // Retry once
         try {
           await new Promise(resolve => setTimeout(resolve, 500));
-          const retryResponse = await fetch('/api/users/sync', {
+          const retryResponse = await fetch('/api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              action: 'sync',
               user_id: result.data.user.id,
               email: email,
               username: username,
@@ -308,10 +313,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             const dbUser = await retryResponse.json();
             userData.id = dbUser.id;
             userData.device_id = dbUser.device_id;
-            await fetch('/api/auth/jwt', {
+            await fetch('/api/auth', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: dbUser.id }),
+              body: JSON.stringify({ action: 'issueJwt', userId: dbUser.id }),
             });
             console.log('Sync retry succeeded');
           }
