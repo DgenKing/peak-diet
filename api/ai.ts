@@ -72,11 +72,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { action, userId } = req.body;
+  const { action, userId, deviceId } = req.body;
 
   // Check daily limit before processing AI requests
-  if (userId) {
-    const limitCheck = await checkDailyLimit(userId);
+  // Check by device_id OR user_id to track usage across login/logout
+  if (userId || deviceId) {
+    const limitCheck = await checkDailyLimit(userId, deviceId);
     if (!limitCheck.allowed) {
       return res.status(429).json({
         error: 'daily_limit_reached',
@@ -100,7 +101,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handleGenerate(req: VercelRequest, res: VercelResponse) {
-  const { userId, prompt } = req.body;
+  const { userId, deviceId, prompt } = req.body;
 
   if (!prompt) {
     return res.status(400).json({ error: 'prompt is required' });
@@ -119,9 +120,10 @@ async function handleGenerate(req: VercelRequest, res: VercelResponse) {
     const content = completion.choices[0].message.content;
     if (!content) throw new Error("No content returned from AI");
 
-    if (userId && completion.usage) {
+    if ((userId || deviceId) && completion.usage) {
       await recordTokenUsage({
         userId,
+        deviceId,
         tokensInput: completion.usage.prompt_tokens,
         tokensOutput: completion.usage.completion_tokens,
         model: "deepseek-chat",
@@ -138,7 +140,7 @@ async function handleGenerate(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handleUpdate(req: VercelRequest, res: VercelResponse) {
-  const { userId, currentPlan, instruction } = req.body;
+  const { userId, deviceId, currentPlan, instruction } = req.body;
 
   if (!currentPlan || !instruction) {
     return res.status(400).json({ error: 'currentPlan and instruction are required' });
@@ -157,9 +159,10 @@ async function handleUpdate(req: VercelRequest, res: VercelResponse) {
     const content = completion.choices[0].message.content;
     if (!content) throw new Error("No content returned from AI");
 
-    if (userId && completion.usage) {
+    if ((userId || deviceId) && completion.usage) {
       await recordTokenUsage({
         userId,
+        deviceId,
         tokensInput: completion.usage.prompt_tokens,
         tokensOutput: completion.usage.completion_tokens,
         model: "deepseek-chat",
@@ -176,7 +179,7 @@ async function handleUpdate(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handleMealUpdate(req: VercelRequest, res: VercelResponse) {
-  const { userId, meal, instruction, dailyTargets } = req.body;
+  const { userId, deviceId, meal, instruction, dailyTargets } = req.body;
 
   if (!meal || !instruction || !dailyTargets) {
     return res.status(400).json({ error: 'meal, instruction, and dailyTargets are required' });
@@ -198,9 +201,10 @@ async function handleMealUpdate(req: VercelRequest, res: VercelResponse) {
     const content = completion.choices[0].message.content;
     if (!content) throw new Error("No content returned from AI");
 
-    if (userId && completion.usage) {
+    if ((userId || deviceId) && completion.usage) {
       await recordTokenUsage({
         userId,
+        deviceId,
         tokensInput: completion.usage.prompt_tokens,
         tokensOutput: completion.usage.completion_tokens,
         model: "deepseek-chat",
@@ -217,7 +221,7 @@ async function handleMealUpdate(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handleShoppingList(req: VercelRequest, res: VercelResponse) {
-  const { userId, ingredients } = req.body;
+  const { userId, deviceId, ingredients } = req.body;
 
   if (!ingredients || !Array.isArray(ingredients)) {
     return res.status(400).json({ error: 'ingredients array is required' });
@@ -251,9 +255,10 @@ async function handleShoppingList(req: VercelRequest, res: VercelResponse) {
       model: "deepseek-chat",
     });
 
-    if (userId && completion.usage) {
+    if ((userId || deviceId) && completion.usage) {
       await recordTokenUsage({
         userId,
+        deviceId,
         tokensInput: completion.usage.prompt_tokens,
         tokensOutput: completion.usage.completion_tokens,
         model: "deepseek-chat",

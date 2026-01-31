@@ -6,13 +6,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId } = req.body;
+  const { userId, deviceId } = req.body;
 
-  if (!userId) {
-    return res.status(400).json({ error: 'userId required' });
+  if (!userId && !deviceId) {
+    return res.status(400).json({ error: 'userId or deviceId required' });
   }
 
-  const limitCheck = await checkDailyLimit(userId);
+  const limitCheck = await checkDailyLimit(userId, deviceId);
 
   return res.status(200).json({
     allowed: limitCheck.allowed,

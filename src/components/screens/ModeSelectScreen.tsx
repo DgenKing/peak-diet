@@ -15,13 +15,16 @@ export function ModeSelectScreen({ onSelect, onBack }: ModeSelectScreenProps) {
 
   const handleModeSelect = async (mode: AppMode) => {
     // Check daily limit before allowing user to start form
-    if (userId) {
+    // Check for both logged-in users (userId) and guests (deviceId)
+    const deviceId = localStorage.getItem('peak_diet_device_id');
+
+    if (userId || deviceId) {
       setChecking(true);
       try {
         const res = await fetch('/api/usage/check', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId }),
+          body: JSON.stringify({ userId, deviceId }),
         });
 
         if (res.ok) {

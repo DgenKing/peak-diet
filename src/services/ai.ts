@@ -6,6 +6,12 @@ import { generateAdvancedPrompt } from '../utils/advancedPromptGenerator';
 import { MealSchema } from '../types/diet';
 import type { Meal, Macro } from '../types/diet';
 
+const DEVICE_ID_KEY = 'peak_diet_device_id';
+
+function getDeviceId(): string | undefined {
+  return localStorage.getItem(DEVICE_ID_KEY) || undefined;
+}
+
 export class UsageLimitError extends Error {
   used: number;
   limit: number;
@@ -109,7 +115,7 @@ export async function generateDietPlan(data: SimpleFormData, userId?: string): P
     const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, prompt: userPrompt, action: 'generate' }),
+      body: JSON.stringify({ userId, deviceId: getDeviceId(), prompt: userPrompt, action: 'generate' }),
     });
 
     if (response.status === 429) {
@@ -140,7 +146,7 @@ export async function updateDietPlan(currentPlan: DietPlan, instruction: string,
     const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, currentPlan, instruction, action: 'update' }),
+      body: JSON.stringify({ userId, deviceId: getDeviceId(), currentPlan, instruction, action: 'update' }),
     });
 
     if (response.status === 429) {
@@ -183,7 +189,7 @@ export async function generateAdvancedDietPlan(data: AdvancedFormData, userId?: 
     const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, prompt: userPrompt, action: 'generate' }),
+      body: JSON.stringify({ userId, deviceId: getDeviceId(), prompt: userPrompt, action: 'generate' }),
     });
 
     if (response.status === 429) {
@@ -219,7 +225,7 @@ export async function updateMeal(
     const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, meal, instruction, dailyTargets, action: 'meal_update' }),
+      body: JSON.stringify({ userId, deviceId: getDeviceId(), meal, instruction, dailyTargets, action: 'meal_update' }),
     });
 
     if (response.status === 429) {
@@ -276,7 +282,7 @@ export async function generateShoppingList(ingredients: string[], userId?: strin
     const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, ingredients, action: 'shopping_list' }),
+      body: JSON.stringify({ userId, deviceId: getDeviceId(), ingredients, action: 'shopping_list' }),
     });
 
     if (response.status === 429) {

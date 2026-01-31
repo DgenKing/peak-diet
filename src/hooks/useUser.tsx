@@ -421,33 +421,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to clear JWT:', err);
     }
 
-    // Clear stored user data before creating guest
+    // Clear user data but KEEP device_id for token tracking
+    // Device ID persists across login/logout to maintain daily usage limits
     localStorage.removeItem(USER_KEY);
 
-    // Create fresh anonymous user with new device_id
-    // (old device_id is linked to registered user, can't reuse)
-    const deviceId = crypto.randomUUID();
-    localStorage.setItem(DEVICE_ID_KEY, deviceId);
-
-    try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ device_id: deviceId }),
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        const guestUser = { ...userData, emailVerified: false };
-        setUser(guestUser);
-        localStorage.setItem(USER_KEY, JSON.stringify(guestUser));
-        return;
-      }
-    } catch (e) {
-      console.error('Error re-initializing guest:', e);
-    }
-
-    setUser(null);
-    localStorage.removeItem(USER_KEY);
+    // Set anonymous user state (no DB call, no new account created)
+    // UI will show "Guest" based on lack of active session
+    const guestUser: User = {
+      id: '',  // No user_id when logged out
+      username: 'Guest',
+      email: null,
+      is_anonymous: true,
+      emailVerified: false,
+    };
+    setUser(guestUser);
   };
 
   const isAnonymous = user ? (user.is_anonymous === true) : true;
