@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import type { Meal, Macro } from '../types/diet';
-import { updateMeal } from '../services/ai';
+import { updateMeal, UsageLimitError } from '../services/ai';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import { Modal } from './ui/Modal';
 import { useUser } from '../hooks/useUser';
 
 interface MealEditorModalProps {
@@ -26,6 +27,7 @@ export function MealEditorModal({
   const [instruction, setInstruction] = useState('');
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   // Reset state when modal opens with new meal
   useEffect(() => {
@@ -61,6 +63,11 @@ export function MealEditorModal({
       onMealUpdated(updated, mealIndex);
       onClose();
     } catch (err) {
+      if (err instanceof UsageLimitError) {
+        setShowLimitModal(true);
+        setUpdating(false);
+        return;
+      }
       console.error(err);
       setError('Failed to update meal. Please try again.');
     } finally {
@@ -189,6 +196,15 @@ export function MealEditorModal({
           </p>
         </div>
       </div>
+
+      {/* Usage Limit Modal */}
+      <Modal
+        isOpen={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        title="Daily Limit Reached"
+        message="Daily token limit reached. Resets tomorrow—see you then! 🚀"
+        showFooter={false}
+      />
     </div>
   );
 }

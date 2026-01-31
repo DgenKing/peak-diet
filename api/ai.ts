@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
-import { recordTokenUsage } from './lib/token.js';
+import { recordTokenUsage, checkDailyLimit } from './lib/token.js';
 
 // Hardcoded for local dev - vercel dev loads wrong env var
 const API_KEY = "sk-ed5a720028c2406180217f19e1ca47e6";
@@ -72,7 +72,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { action } = req.body;
+  const { action, userId } = req.body;
+
+  // Check daily limit before processing AI requests
+  if (userId) {
+    const limitCheck = await checkDailyLimit(userId);
+    if (!limitCheck.allowed) {
+      return res.status(429).json({
+        error: 'daily_limit_reached',
+        message: 'Daily token limit reached. Resets tomorrow—see you then! 🚀',
+        usage: { used: limitCheck.used, limit: limitCheck.limit, remaining: 0 }
+      });
+    }
+  }
 
   if (action === 'generate') {
     return handleGenerate(req, res);

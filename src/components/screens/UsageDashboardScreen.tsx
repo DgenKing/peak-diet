@@ -137,9 +137,9 @@ export function UsageDashboardScreen({ onBack }: UsageDashboardScreenProps) {
                       {new Date(day.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                     </div>
                     <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary" 
-                        style={{ width: `${Math.min(100, (parseInt(day.tokens) / 10000) * 100)}%` }}
+                      <div
+                        className="h-full bg-primary"
+                        style={{ width: `${Math.min(100, (parseInt(day.tokens) / 5000) * 100)}%` }}
                       />
                     </div>
                     <div className="text-[10px] font-bold text-gray-500 w-12 text-right">

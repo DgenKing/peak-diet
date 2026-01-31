@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { DietPlan, DayOfWeek, Meal } from '../../types/diet';
-import { updateDietPlan } from '../../services/ai';
+import { updateDietPlan, UsageLimitError } from '../../services/ai';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
@@ -41,6 +41,7 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
   // Track if plan has been saved to a day (already saved if viewing existing day)
   const [hasSaved, setHasSaved] = useState(!!dayName);
   const [flashCopyButton, setFlashCopyButton] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   // Modal State
   const [modalConfig, setModalConfig] = useState<{
@@ -73,6 +74,11 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
         setLoading(false);
         onSave?.(generated);
       } catch (err) {
+        if (err instanceof UsageLimitError) {
+          setShowLimitModal(true);
+          setLoading(false);
+          return;
+        }
         console.error(err);
         setError('Failed to generate plan. Please try again.');
         setLoading(false);
@@ -93,7 +99,12 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
       onSave?.(updated);
       setChatInput('');
     } catch (err) {
-        console.error(err);
+      if (err instanceof UsageLimitError) {
+        setShowLimitModal(true);
+        setUpdating(false);
+        return;
+      }
+      console.error(err);
       setModalConfig({
         isOpen: true,
         title: 'Error',
@@ -244,6 +255,15 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
           variant={modalConfig.variant}
           confirmText={modalConfig.confirmText}
           cancelText={modalConfig.cancelText}
+       />
+
+       {/* Usage Limit Modal */}
+       <Modal
+          isOpen={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          title="Daily Limit Reached"
+          message="Daily token limit reached. Resets tomorrow—see you then! 🚀"
+          showFooter={false}
        />
 
        {/* Meal Editor Modal */}
