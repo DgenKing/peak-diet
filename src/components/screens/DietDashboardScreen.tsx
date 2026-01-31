@@ -225,7 +225,23 @@ export function DietDashboardScreen({ generatePlan, initialPlan, dayName, onBack
     );
   }
 
-  if (!plan) return null;
+  // Show limit modal even when no plan (fixes blank screen issue)
+  if (!plan) {
+    return (
+      <>
+        <Modal
+          isOpen={showLimitModal}
+          onClose={() => {
+            setShowLimitModal(false);
+            onBack();
+          }}
+          title="Daily Limit Reached"
+          message="Daily token limit reached. Resets tomorrow—see you then! 🚀"
+          showFooter={false}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100 pb-24">
