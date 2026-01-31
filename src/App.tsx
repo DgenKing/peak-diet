@@ -5,6 +5,7 @@ import { BurgerMenu } from './components/ui/BurgerMenu';
 import { AuthModal } from './components/AuthModal';
 import { VerificationCodeModal } from './components/VerificationCodeModal';
 import { Modal } from './components/ui/Modal';
+import { Analytics } from '@vercel/analytics/react';
 
 // Screens
 import { LandingScreen } from './components/screens/LandingScreen';
@@ -271,10 +272,11 @@ function App() {
       <>
         {renderMenu()}
         {sharedUI}
-        <LandingScreen 
-          onStart={() => setScreen('planner')} 
+        <LandingScreen
+          onStart={() => setScreen('planner')}
           onTutorial={() => { setPreviousScreen('landing'); setScreen('getting-started'); }}
         />
+        <Analytics />
       </>
     );
   }
@@ -286,6 +288,7 @@ function App() {
         {renderMenu()}
         {sharedUI}
         <GettingStartedScreen onBack={() => setScreen(previousScreen)} />
+        <Analytics />
       </>
     );
   }
@@ -297,6 +300,7 @@ function App() {
         {renderMenu()}
         {sharedUI}
         <FeedbackScreen onBack={() => setScreen(previousScreen)} />
+        <Analytics />
       </>
     );
   }
@@ -307,6 +311,7 @@ function App() {
       <>
         {sharedUI}
         <UsageDashboardScreen onBack={() => setScreen(previousScreen)} />
+        <Analytics />
       </>
     );
   }
@@ -329,6 +334,7 @@ function App() {
           hasScheduleChanged={hasScheduleChanged}
           onSaveShoppingList={saveShoppingList}
         />
+        <Analytics />
       </>
     );
   }
@@ -347,6 +353,7 @@ function App() {
           }}
           onBack={() => setScreen('planner')}
         />
+        <Analytics />
       </>
     );
   }
@@ -401,6 +408,7 @@ function App() {
         {showMenu && renderMenu(true)}
         {sharedUI}
         {content}
+        <Analytics />
       </>
     );
   }
@@ -458,6 +466,7 @@ function App() {
         {showMenu && renderMenu(true)}
         {sharedUI}
         {content}
+        <Analytics />
       </>
     );
   }
@@ -478,6 +487,7 @@ function App() {
           pendingNavigation={pendingNavigation}
           onClearPendingNavigation={() => setPendingNavigation(null)}
         />
+        <Analytics />
       </>
     );
   }

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@neondatabase/neon-js": "^0.1.0-beta.22",
+    "@vercel/analytics": "^1.6.1",
     "@vercel/postgres": "^0.10.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
