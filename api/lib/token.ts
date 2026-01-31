@@ -1,5 +1,7 @@
 import { db } from './db.js';
 
+const DAILY_TOKEN_LIMIT = 5000;
+
 interface TokenUsageParams {
   userId: string;
   tokensInput: number;
@@ -26,5 +28,34 @@ export async function recordTokenUsage({
   } catch (error) {
     // Log but don't fail the request if tracking fails
     console.error('Failed to record token usage:', error);
+  }
+}
+
+export async function checkDailyLimit(userId: string): Promise<{
+  allowed: boolean;
+  used: number;
+  limit: number;
+  remaining: number;
+}> {
+  try {
+    const result = await db.query(
+      `SELECT COALESCE(SUM(tokens_total), 0)::int as daily_tokens
+       FROM token_usage WHERE user_id = $1 AND created_at >= CURRENT_DATE`,
+      [userId]
+    );
+
+    const used = result.rows[0]?.daily_tokens || 0;
+    const remaining = Math.max(0, DAILY_TOKEN_LIMIT - used);
+
+    return {
+      allowed: used < DAILY_TOKEN_LIMIT,
+      used,
+      limit: DAILY_TOKEN_LIMIT,
+      remaining
+    };
+  } catch (error) {
+    console.error('Failed to check daily limit:', error);
+    // Fail open - allow request if check fails
+    return { allowed: true, used: 0, limit: DAILY_TOKEN_LIMIT, remaining: DAILY_TOKEN_LIMIT };
   }
 }

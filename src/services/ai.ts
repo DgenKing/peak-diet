@@ -6,6 +6,18 @@ import { generateAdvancedPrompt } from '../utils/advancedPromptGenerator';
 import { MealSchema } from '../types/diet';
 import type { Meal, Macro } from '../types/diet';
 
+export class UsageLimitError extends Error {
+  used: number;
+  limit: number;
+
+  constructor(message: string, used: number, limit: number) {
+    super(message);
+    this.name = 'UsageLimitError';
+    this.used = used;
+    this.limit = limit;
+  }
+}
+
 const MOCK_PLAN: DietPlan = {
   summary: "Oatmeal, chicken, rice, broccoli, salmon, quinoa - high protein plan for muscle building with balanced macros throughout the day.",
   dailyTargets: { calories: 2400, protein: 180, carbs: 250, fats: 80 },
@@ -100,6 +112,11 @@ export async function generateDietPlan(data: SimpleFormData, userId?: string): P
       body: JSON.stringify({ userId, prompt: userPrompt, action: 'generate' }),
     });
 
+    if (response.status === 429) {
+      const err = await response.json();
+      throw new UsageLimitError(err.message, err.usage?.used || 5000, err.usage?.limit || 5000);
+    }
+
     if (!response.ok) {
       throw new Error('API request failed');
     }
@@ -108,6 +125,9 @@ export async function generateDietPlan(data: SimpleFormData, userId?: string): P
     const plan = DietPlanSchema.parse(json);
     return recalculatePlanTotals(plan);
   } catch (error) {
+    if (error instanceof UsageLimitError) {
+      throw error;
+    }
     console.error("AI Generation Error:", error);
     console.warn("Falling back to mock data");
     await new Promise(r => setTimeout(r, 1500));
@@ -123,6 +143,11 @@ export async function updateDietPlan(currentPlan: DietPlan, instruction: string,
       body: JSON.stringify({ userId, currentPlan, instruction, action: 'update' }),
     });
 
+    if (response.status === 429) {
+      const err = await response.json();
+      throw new UsageLimitError(err.message, err.usage?.used || 5000, err.usage?.limit || 5000);
+    }
+
     if (!response.ok) {
       throw new Error('API request failed');
     }
@@ -131,6 +156,9 @@ export async function updateDietPlan(currentPlan: DietPlan, instruction: string,
     const plan = DietPlanSchema.parse(json);
     return recalculatePlanTotals(plan);
   } catch (error) {
+    if (error instanceof UsageLimitError) {
+      throw error;
+    }
     console.error("AI Update Error:", error);
     if (!userId) {
       console.warn("Falling back to mock update (no userId)");
@@ -158,6 +186,11 @@ export async function generateAdvancedDietPlan(data: AdvancedFormData, userId?: 
       body: JSON.stringify({ userId, prompt: userPrompt, action: 'generate' }),
     });
 
+    if (response.status === 429) {
+      const err = await response.json();
+      throw new UsageLimitError(err.message, err.usage?.used || 5000, err.usage?.limit || 5000);
+    }
+
     if (!response.ok) {
       throw new Error('API request failed');
     }
@@ -166,6 +199,9 @@ export async function generateAdvancedDietPlan(data: AdvancedFormData, userId?: 
     const plan = DietPlanSchema.parse(json);
     return recalculatePlanTotals(plan);
   } catch (error) {
+    if (error instanceof UsageLimitError) {
+      throw error;
+    }
     console.error("AI Generation Error:", error);
     console.warn("Falling back to mock data");
     await new Promise(r => setTimeout(r, 1500));
@@ -185,6 +221,11 @@ export async function updateMeal(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, meal, instruction, dailyTargets, action: 'meal_update' }),
     });
+
+    if (response.status === 429) {
+      const err = await response.json();
+      throw new UsageLimitError(err.message, err.usage?.used || 5000, err.usage?.limit || 5000);
+    }
 
     if (!response.ok) {
       throw new Error('API request failed');
@@ -211,6 +252,9 @@ export async function updateMeal(
     }
     return updatedMeal;
   } catch (error) {
+    if (error instanceof UsageLimitError) {
+      throw error;
+    }
     console.error("AI Meal Update Error:", error);
     if (!userId) {
        console.warn("Falling back to mock meal update (no userId)");
@@ -235,6 +279,11 @@ export async function generateShoppingList(ingredients: string[], userId?: strin
       body: JSON.stringify({ userId, ingredients, action: 'shopping_list' }),
     });
 
+    if (response.status === 429) {
+      const err = await response.json();
+      throw new UsageLimitError(err.message, err.usage?.used || 5000, err.usage?.limit || 5000);
+    }
+
     if (!response.ok) {
       throw new Error('API request failed');
     }
@@ -242,6 +291,9 @@ export async function generateShoppingList(ingredients: string[], userId?: strin
     const json = await response.json();
     return json.content || "Could not generate list.";
   } catch (error) {
+    if (error instanceof UsageLimitError) {
+      throw error;
+    }
     console.error("AI Shopping List Error:", error);
     if (!userId) {
        console.warn("Falling back to mock shopping list (no userId)");
