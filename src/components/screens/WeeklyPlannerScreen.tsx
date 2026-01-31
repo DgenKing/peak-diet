@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { DayOfWeek, WeeklySchedule } from '../../types/diet';
-import { generateShoppingList } from '../../services/ai';
+import { generateShoppingList, UsageLimitError } from '../../services/ai';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import logo from '../../assets/logo.png';
@@ -91,8 +91,12 @@ export function WeeklyPlannerScreen({ schedule, onSelectDay, onClearDay, onGener
       setShoppingListContent(list);
       onSaveShoppingList(list);
     } catch (err) {
-      console.error(err);
-      setShoppingListContent("Error generating list. Please try again.");
+      if (err instanceof UsageLimitError) {
+        setShoppingListContent("Daily token limit reached. Resets tomorrow—see you then! 🚀");
+      } else {
+        console.error(err);
+        setShoppingListContent("Error generating list. Please try again.");
+      }
     } finally {
       setShoppingListLoading(false);
     }

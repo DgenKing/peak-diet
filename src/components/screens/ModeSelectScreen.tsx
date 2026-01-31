@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import type { AppMode } from '../../types';
+import { Modal } from '../ui/Modal';
+import { useUser } from '../../hooks/useUser';
 
 interface ModeSelectScreenProps {
   onSelect: (mode: AppMode) => void;
@@ -6,6 +9,39 @@ interface ModeSelectScreenProps {
 }
 
 export function ModeSelectScreen({ onSelect, onBack }: ModeSelectScreenProps) {
+  const { userId } = useUser();
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [checking, setChecking] = useState(false);
+
+  const handleModeSelect = async (mode: AppMode) => {
+    // Check daily limit before allowing user to start form
+    if (userId) {
+      setChecking(true);
+      try {
+        const res = await fetch('/api/usage/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.allowed) {
+            setShowLimitModal(true);
+            setChecking(false);
+            return;
+          }
+        }
+      } catch (err) {
+        // If check fails, allow proceeding (fail open)
+        console.error('Failed to check limit:', err);
+      }
+      setChecking(false);
+    }
+
+    onSelect(mode);
+  };
+
   return (
     <div className="min-h-screen flex flex-col p-6">
       {/* Back button */}
@@ -30,8 +66,9 @@ export function ModeSelectScreen({ onSelect, onBack }: ModeSelectScreenProps) {
         <div className="space-y-4">
           {/* Simple Mode Card */}
           <button
-            onClick={() => onSelect('simple')}
-            className="w-full p-6 rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-left hover:border-primary hover:shadow-lg transition-all group"
+            onClick={() => handleModeSelect('simple')}
+            disabled={checking}
+            className="w-full p-6 rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-left hover:border-primary hover:shadow-lg transition-all group disabled:opacity-50 disabled:cursor-wait"
           >
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -52,8 +89,9 @@ export function ModeSelectScreen({ onSelect, onBack }: ModeSelectScreenProps) {
 
           {/* Advanced Mode Card */}
           <button
-            onClick={() => onSelect('advanced')}
-            className="w-full p-6 rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-left hover:border-advanced hover:shadow-lg transition-all group"
+            onClick={() => handleModeSelect('advanced')}
+            disabled={checking}
+            className="w-full p-6 rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-left hover:border-advanced hover:shadow-lg transition-all group disabled:opacity-50 disabled:cursor-wait"
           >
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-advanced/10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-advanced/20 transition-colors">
@@ -77,6 +115,18 @@ export function ModeSelectScreen({ onSelect, onBack }: ModeSelectScreenProps) {
           Not sure? Start Simple — you can always switch later
         </p>
       </div>
+
+      {/* Usage Limit Modal */}
+      <Modal
+        isOpen={showLimitModal}
+        onClose={() => {
+          setShowLimitModal(false);
+          onBack();
+        }}
+        title="Daily Limit Reached"
+        message="Daily token limit reached. Resets tomorrow—see you then! 🚀"
+        showFooter={false}
+      />
     </div>
   );
 }
