@@ -61,10 +61,10 @@ const steps: Step[] = [
       '"Swap chicken for beef" - replaces ingredients',
       '"Make lunch vegetarian" - dietary adjustments',
       '"I\'m drinking 4 beers tonight, adjust my diet" - lifestyle changes',
-      '"Add a snack between lunch and dinner" - meal structure',
+      '"Make my meal Gourmet" - adds flair!',
       '"Reduce carbs and increase protein" - macro adjustments'
     ],
-    tip: "Be specific! 'More protein' is good, 'Add 30g protein to dinner' is better."
+    tip: "Be specific! Try 'Add some roasted veggies' or 'Include a Greek yogurt on the side'. ⚡ Pro Tip: Select any meal to edit—it's faster and more precise than updating your entire day at once!"
   },
   {
     id: 'copy-days',

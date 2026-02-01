@@ -8,6 +8,7 @@ import { Modal } from './components/ui/Modal';
 import { Analytics } from '@vercel/analytics/react';
 
 // Screens
+import { MarketingLandingPage } from './components/screens/MarketingLandingPage';
 import { LandingScreen } from './components/screens/LandingScreen';
 import { ModeSelectScreen } from './components/screens/ModeSelectScreen';
 import { WeeklyPlannerScreen } from './components/screens/WeeklyPlannerScreen';
@@ -115,7 +116,7 @@ const initialAdvancedData: AdvancedFormData = {
   allowSupplementRecs: true,
 };
 
-type Screen = 'landing' | 'getting-started' | 'feedback' | 'mode-select' | 'simple' | 'advanced' | 'planner' | 'dashboard' | 'usage';
+type Screen = 'marketing' | 'landing' | 'getting-started' | 'feedback' | 'mode-select' | 'simple' | 'advanced' | 'planner' | 'dashboard' | 'usage';
 
 function App() {
   const { theme, toggleTheme } = useTheme();
@@ -123,6 +124,12 @@ function App() {
   const { user, userId, username, isAnonymous, isEmailVerified, logout } = useUser();
   
   const [screen, setScreen] = useState<Screen>(() => {
+    const hasSeenMarketing = localStorage.getItem('peak_diet_seen_marketing');
+
+    if (!hasSeenMarketing) {
+      return 'marketing'; // First visit → show marketing
+    }
+
     const hasPlan = Object.values(weeklySchedule).some(p => p !== null);
     return hasPlan ? 'planner' : 'landing';
   });
@@ -265,6 +272,33 @@ function App() {
       />
     </>
   );
+
+  // Marketing Landing Page (First Visit)
+  if (screen === 'marketing') {
+    return (
+      <>
+        {sharedUI}
+        <MarketingLandingPage
+          onGetStarted={() => {
+            localStorage.setItem('peak_diet_seen_marketing', 'true');
+            const hasPlan = Object.values(weeklySchedule).some(p => p !== null);
+            setScreen(hasPlan ? 'planner' : 'landing');
+          }}
+          onViewGuide={() => {
+            localStorage.setItem('peak_diet_seen_marketing', 'true');
+            setPreviousScreen('marketing');
+            setScreen('getting-started');
+          }}
+          onSkip={() => {
+            localStorage.setItem('peak_diet_seen_marketing', 'true');
+            const hasPlan = Object.values(weeklySchedule).some(p => p !== null);
+            setScreen(hasPlan ? 'planner' : 'landing');
+          }}
+        />
+        <Analytics />
+      </>
+    );
+  }
 
   // Landing
   if (screen === 'landing') {
