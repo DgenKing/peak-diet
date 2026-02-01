@@ -14,19 +14,6 @@ type Step = {
 
 const steps: Step[] = [
   {
-    id: 'weekly-planner',
-    title: 'Your Weekly Planner',
-    icon: '📅',
-    description: "The home screen shows your 7-day meal plan calendar. Start by tapping any day to create a diet plan for it.",
-    details: [
-      "Each day shows a preview of your plan or 'Empty' if not set",
-      "Green checkmarks indicate days with completed plans",
-      "Tap a day to view, edit, or create a new plan",
-      "Clear any day by tapping the X button"
-    ],
-    tip: "Fill all 7 days to unlock the AI Shopping List feature!"
-  },
-  {
     id: 'choose-mode',
     title: 'Choose Your Mode',
     icon: '⚡',
@@ -90,6 +77,19 @@ const steps: Step[] = [
       "Each day's plan is independent after copying",
       "Perfect for meal prep Sundays"
     ]
+  },
+  {
+    id: 'weekly-planner',
+    title: 'Your Weekly Planner',
+    icon: '📅',
+    description: "The home screen shows your 7-day meal plan calendar. Start by tapping any day to create a diet plan for it.",
+    details: [
+      "Each day shows a preview of your plan or 'Empty' if not set",
+      "Green 'Exists' indicate days with completed plans",
+      "Tap a day to view, edit, or create a new plan",
+      "Clear any day by tapping the dustbin icon"
+    ],
+    tip: "Fill all 7 days to unlock the AI Shopping List feature!"
   },
   {
     id: 'shopping-list',

@@ -1,6 +1,22 @@
 import { db } from './db.js';
 
-const DAILY_TOKEN_LIMIT = 5000;
+const DEFAULT_DAILY_TOKEN_LIMIT = 5000;
+
+// Get user's specific token limit from database, or default if not found
+async function getUserTokenLimit(userId: string): Promise<number> {
+  if (!userId) return DEFAULT_DAILY_TOKEN_LIMIT;
+
+  try {
+    const result = await db.query(
+      `SELECT daily_token_limit FROM users WHERE id = $1`,
+      [userId]
+    );
+    return result.rows[0]?.daily_token_limit || DEFAULT_DAILY_TOKEN_LIMIT;
+  } catch (error) {
+    console.error('Failed to get user token limit:', error);
+    return DEFAULT_DAILY_TOKEN_LIMIT;
+  }
+}
 
 interface TokenUsageParams {
   userId: string;
@@ -40,6 +56,9 @@ export async function checkDailyLimit(userId: string, deviceId?: string): Promis
   remaining: number;
 }> {
   try {
+    // Get user's specific limit (or default for guests)
+    const userLimit = await getUserTokenLimit(userId);
+
     // Check by device_id OR user_id to catch all usage from this device
     // This ensures token limits persist across login/logout on same device
     const result = await db.query(
@@ -51,17 +70,17 @@ export async function checkDailyLimit(userId: string, deviceId?: string): Promis
     );
 
     const used = result.rows[0]?.daily_tokens || 0;
-    const remaining = Math.max(0, DAILY_TOKEN_LIMIT - used);
+    const remaining = Math.max(0, userLimit - used);
 
     return {
-      allowed: used < DAILY_TOKEN_LIMIT,
+      allowed: used < userLimit,
       used,
-      limit: DAILY_TOKEN_LIMIT,
+      limit: userLimit,
       remaining
     };
   } catch (error) {
     console.error('Failed to check daily limit:', error);
     // Fail open - allow request if check fails
-    return { allowed: true, used: 0, limit: DAILY_TOKEN_LIMIT, remaining: DAILY_TOKEN_LIMIT };
+    return { allowed: true, used: 0, limit: DEFAULT_DAILY_TOKEN_LIMIT, remaining: DEFAULT_DAILY_TOKEN_LIMIT };
   }
 }
