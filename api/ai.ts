@@ -2,7 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import { recordTokenUsage, checkDailyLimit } from './lib/token.js';
 
-const API_KEY = process.env.DEEPSEEK_API_KEY;
+const API_KEY = process.env.DEEPSEEK_API_KEY || process.env.VITE_DEEPSEEK_API_KEY;
 
 const client = new OpenAI({
   baseURL: 'https://api.deepseek.com',
