@@ -2,8 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import { recordTokenUsage, checkDailyLimit } from './lib/token.js';
 
-// Hardcoded for local dev - vercel dev loads wrong env var
-const API_KEY = "${DEEPSEEK_API_KEY:-REDACTED}";
+const API_KEY = process.env.DEEPSEEK_API_KEY;
 
 const client = new OpenAI({
   baseURL: 'https://api.deepseek.com',
