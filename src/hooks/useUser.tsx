@@ -365,10 +365,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const forgetPassword = async (email: string) => {
     setError(null);
     try {
-      const result = await authClient.emailOtp.sendVerificationOtp({
-        email,
-        type: 'forget-password'
-      });
+      const result = await authClient.forgetPassword.emailOtp({ email });
       if (result.error) {
         throw new Error(result.error.message);
       }
@@ -382,7 +379,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = async (email: string, otp: string, newPassword: string) => {
     setError(null);
     try {
-      const result = await authClient.emailOtp.resetPassword({
+      const result = await authClient.forgetPassword.resetPassword({
         email,
         otp,
         password: newPassword
