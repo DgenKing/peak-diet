@@ -379,7 +379,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = async (email: string, otp: string, newPassword: string) => {
     setError(null);
     try {
-      const result = await authClient.forgetPassword.resetPassword({
+      const result = await authClient.emailOtp.resetPassword({
         email,
         otp,
         password: newPassword
